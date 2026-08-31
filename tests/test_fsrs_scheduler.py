@@ -187,17 +187,15 @@ class TestFailsafe:
     """Test failsafe behaviors."""
 
     def test_negative_stability_handled(self):
-        """Test negative stability is handled gracefully."""
+        """Test negative stability raises error."""
         scheduler = FSRSScheduler()
-        next_date, new_stability, _ = scheduler.schedule_next_review(
-            stability=-1.0,
-            difficulty=5.0,
-            performance=1.0,
-            state=2
-        )
-
-        # Should use default instead
-        assert new_stability >= scheduler.stability_default
+        with pytest.raises(ValueError, match="E201"):
+            scheduler.schedule_next_review(
+                stability=-1.0,
+                difficulty=5.0,
+                performance=1.0,
+                state=2
+            )
 
     def test_extreme_values_dont_crash(self):
         """Test extreme values don't cause crashes."""

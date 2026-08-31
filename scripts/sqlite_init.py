@@ -31,6 +31,10 @@ def init_database(
     """
     db_path = goal_path / "memory.db"
 
+    # Check if database already exists to prevent duplicate initialization
+    if db_path.exists():
+        raise FileExistsError(f"E001: Goal database already exists at {db_path}")
+
     conn = sqlite3.connect(db_path)
     cursor = conn.cursor()
 

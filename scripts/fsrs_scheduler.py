@@ -75,6 +75,13 @@ class FSRSScheduler:
         Returns:
             Tuple of (next_review_date, new_stability, new_difficulty)
         """
+        # Validate inputs
+        if stability is not None and stability < 0:
+            raise ValueError("E201: Invalid stability value - must be non-negative")
+
+        if not 0.0 <= performance <= 1.0:
+            raise ValueError("E203: Invalid performance score - must be in [0.0, 1.0]")
+
         # Initialize new items
         if stability is None:
             stability = self.stability_default
