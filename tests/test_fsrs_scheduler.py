@@ -261,3 +261,46 @@ class TestFSRSEdgeCases:
             stability=5.0, difficulty=10.0, performance=0.3, state=2
         )
         assert new_d_max <= 10.0
+
+
+class TestFSRSBoundsChecking:
+    """Tests for FSRS parameter bounds."""
+
+    def test_stability_capped_at_max(self):
+        """Stability should be capped at MAX_STABILITY."""
+        scheduler = FSRSScheduler()
+        # Very high stability
+        next_review, new_stability, _ = scheduler.schedule_next_review(
+            stability=1000.0,
+            difficulty=5.0,
+            performance=1.0,
+            state=2
+        )
+        assert new_stability <= 365.0
+
+    def test_interval_capped_at_one_year(self):
+        """Interval should not exceed 365 days."""
+        scheduler = FSRSScheduler()
+        next_review, _, _ = scheduler.schedule_next_review(
+            stability=100.0,
+            difficulty=1.0,
+            performance=1.0,
+            state=2
+        )
+        days = (next_review - datetime.now()).days
+        # Allow 1 day tolerance for timing
+        assert days <= 366
+
+    def test_extreme_performance_values_handled(self):
+        """Handle extreme performance values gracefully."""
+        scheduler = FSRSScheduler()
+        # Performance at bounds
+        for perf in [0.0, 1.0]:
+            next_review, stability, difficulty = scheduler.schedule_next_review(
+                stability=None,
+                difficulty=None,
+                performance=perf,
+                state=0
+            )
+            assert 0 < stability <= 365
+            assert 1.0 <= difficulty <= 10.0

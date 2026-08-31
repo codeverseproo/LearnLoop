@@ -16,6 +16,10 @@ STABILITY_DEFAULT = 2.5  # Default stability in days
 DIFFICULTY_DEFAULT = 5.0  # Default difficulty (1-10 scale)
 DECAY = -0.5  # Decay factor for mastery calculation
 
+# Upper bounds for safety
+MAX_STABILITY = 365.0  # 1 year maximum stability
+MAX_INTERVAL = 365  # Maximum interval in days
+
 
 def retrievability(stability: float, days_since_review: float) -> float:
     """Calculate probability of recall using FSRS formula.
@@ -88,6 +92,9 @@ class FSRSScheduler:
         if difficulty is None:
             difficulty = self.difficulty_default
 
+        # Cap stability at maximum
+        stability = min(stability, MAX_STABILITY)
+
         # Calculate retrievability for state update
         r = retrievability(stability, 0)
 
@@ -97,11 +104,16 @@ class FSRSScheduler:
         )
         new_difficulty = self.update_difficulty(difficulty, performance)
 
+        # Cap new stability
+        new_stability = min(new_stability, MAX_STABILITY)
+
         # Calculate interval using new stability
         # Target retrievability = 0.9
         # Solve R(t) = 0.9 for t: t = 9 * S * (threshold^(-1) - 1)
         interval_days = 9 * new_stability * (RETRIEVABILITY_THRESHOLD ** -1 - 1)
-        interval_days = max(1, min(365, interval_days))  # Clamp to 1-365 days
+
+        # Clamp interval to valid range
+        interval_days = max(1, min(MAX_INTERVAL, interval_days))
 
         next_review = datetime.now() + timedelta(days=interval_days)
 
