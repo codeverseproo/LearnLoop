@@ -170,6 +170,43 @@ class TestVaultInputValidation:
         assert exc_info.value.code == "E302"
 
 
+class TestMasteryInputValidation:
+    """Tests for input validation in mastery update."""
+
+    def test_E203_rejects_out_of_range_performance(self, tmp_path):
+        """Reject performance > 1.0."""
+        from scripts.mastery_update import update_mastery
+        from scripts.validation import ValidationError
+        from scripts.sqlite_init import init_database
+
+        # Setup test database
+        db_path = init_database("test-goal", tmp_path)
+        conn = sqlite3.connect(db_path)
+        conn.execute("INSERT INTO topics (topic_id, name) VALUES ('T01', 'Test')")
+        conn.commit()
+        conn.close()
+
+        with pytest.raises(ValidationError) as exc_info:
+            update_mastery(db_path, 1, performance=1.5)
+        assert exc_info.value.code == "E203"
+
+    def test_E203_rejects_negative_performance(self, tmp_path):
+        """Reject negative performance."""
+        from scripts.mastery_update import update_mastery
+        from scripts.validation import ValidationError
+        from scripts.sqlite_init import init_database
+
+        db_path = init_database("test-goal2", tmp_path)
+        conn = sqlite3.connect(db_path)
+        conn.execute("INSERT INTO topics (topic_id, name) VALUES ('T01', 'Test')")
+        conn.commit()
+        conn.close()
+
+        with pytest.raises(ValidationError) as exc_info:
+            update_mastery(db_path, 1, performance=-0.5)
+        assert exc_info.value.code == "E203"
+
+
 class TestResearchErrors:
     def test_E603_claim_unverified_flagged(self):
         """E603: Claims with <3 sources flagged as unverified."""

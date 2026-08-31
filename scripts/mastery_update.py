@@ -11,6 +11,7 @@ from pathlib import Path
 from typing import Optional
 
 from scripts.fsrs_scheduler import FSRSScheduler
+from scripts.validation import validate_performance
 
 
 def update_mastery(
@@ -31,8 +32,12 @@ def update_mastery(
         New mastery value
 
     Raises:
+        ValidationError(E203): If performance is invalid
         ValueError: If topic_row_id doesn't exist
     """
+    # Validate performance BEFORE any database operations
+    validate_performance(performance)
+
     scheduler = FSRSScheduler()
 
     conn = sqlite3.connect(db_path)
