@@ -151,6 +151,59 @@ Bundled Python scripts handle critical operations:
 - Confidence scores per claim
 - Complete source bibliography
 
+## WebSearch Integration
+
+When researching topics, use the WebSearch tool to gather sources:
+
+### Research Workflow
+
+1. **Initialize Research Structure**
+```python
+from scripts.research_engine import ResearchEngine
+engine = ResearchEngine()
+result = engine.research(topic, context)
+```
+
+2. **Gather Tier 1 Sources (Academic/Official)**
+```
+Use WebSearch tool with queries:
+- "{topic} site:edu OR site:gov"
+- "{topic} site:arxiv.org"
+- "{topic} scholarly article"
+```
+
+3. **Gather Tier 2 Sources (Broad Web)**
+```
+Use WebSearch with:
+- "{topic} overview"
+- "{topic} explained"
+```
+
+4. **Create Sources and Claims**
+```python
+source = engine.create_source(url, title, snippet)
+claim = engine.create_claim(claim_text, sources=[source1, source2, source3])
+result.add_claim(claim)
+```
+
+5. **Compile Single Note**
+```python
+note = result.compile_note()
+vault.write_note(topic_id, note)
+```
+
+### Example Usage
+
+```
+User: "Research quantum entanglement for my physics exam"
+
+1. WebSearch: "quantum entanglement site:arxiv.org"
+2. WebSearch: "quantum entanglement explained"
+3. Extract claims from results
+4. Triangulate across ≥3 sources
+5. Write comprehensive note to vault
+```
+
 ## Error Handling
 
 All errors use codes E001-E599. See `references/error-codes.md` for details.
