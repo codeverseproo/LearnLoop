@@ -9,7 +9,10 @@ import tempfile
 from pathlib import Path
 import pytest
 from scripts.sqlite_init import init_database
-from scripts.mastery_update import update_mastery, get_topic_mastery
+from scripts.mastery_update import (
+    update_mastery, get_topic_mastery,
+    use_streak_freeze, is_streak_frozen_today, get_streak_freezes_available
+)
 from scripts.vault_manager import VaultManager
 
 
@@ -332,3 +335,63 @@ class TestCompleteWorkflow:
         conn.close()
 
         assert session_count == 3
+
+
+class TestStreakFreeze:
+    """Test streak freeze functionality."""
+
+    def test_streak_freeze_available_initially(self):
+        """New goals start with 1 streak freeze."""
+        import tempfile
+        from scripts.sqlite_init import init_database
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            goal_path = Path(tmpdir) / 'freeze-test'
+            goal_path.mkdir(parents=True)
+            db_path = init_database('freeze-test', goal_path, 'exam')
+
+            freezes = get_streak_freezes_available(db_path, 'freeze-test')
+            assert freezes == 1
+
+    def test_use_streak_freeze_decrements_count(self):
+        """Using freeze decreases available count."""
+        import tempfile
+        from scripts.sqlite_init import init_database
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            goal_path = Path(tmpdir) / 'freeze-use-test'
+            goal_path.mkdir(parents=True)
+            db_path = init_database('freeze-use-test', goal_path, 'exam')
+
+            result = use_streak_freeze(db_path, 'freeze-use-test')
+            assert result is True
+
+            freezes = get_streak_freezes_available(db_path, 'freeze-use-test')
+            assert freezes == 0
+
+    def test_cannot_use_freeze_when_none_available(self):
+        """Cannot use freeze when count is 0."""
+        import tempfile
+        from scripts.sqlite_init import init_database
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            goal_path = Path(tmpdir) / 'no-freeze-test'
+            goal_path.mkdir(parents=True)
+            db_path = init_database('no-freeze-test', goal_path, 'exam')
+
+            use_streak_freeze(db_path, 'no-freeze-test')
+            result = use_streak_freeze(db_path, 'no-freeze-test')
+            assert result is False
+
+    def test_freeze_used_today_detection(self):
+        """Can detect if freeze was used today."""
+        import tempfile
+        from scripts.sqlite_init import init_database
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            goal_path = Path(tmpdir) / 'today-freeze'
+            goal_path.mkdir(parents=True)
+            db_path = init_database('today-freeze', goal_path, 'exam')
+
+            use_streak_freeze(db_path, 'today-freeze')
+            assert is_streak_frozen_today(db_path, 'today-freeze') is True

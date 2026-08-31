@@ -6,7 +6,7 @@ recording sessions and updating FSRS state.
 """
 
 import sqlite3
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 from pathlib import Path
 from typing import Optional
 
@@ -161,3 +161,71 @@ def _get_new_state(current_state: int, performance: float) -> int:
         return 2 if performance >= 0.6 else 3
 
     return current_state
+
+
+def use_streak_freeze(db_path: Path, goal_id: str) -> bool:
+    """Use a streak freeze for today if available.
+
+    Returns True if freeze used successfully, False if none available.
+    """
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT streak_freeze_available FROM streak_state
+            WHERE goal_id = ?
+        """, (goal_id,))
+
+        row = cursor.fetchone()
+
+        if row and row[0] and row[0] > 0:
+            cursor.execute("""
+                UPDATE streak_state
+                SET streak_freeze_available = streak_freeze_available - 1,
+                    streak_freeze_used_date = ?
+                WHERE goal_id = ?
+            """, (date.today().isoformat(), goal_id))
+            conn.commit()
+            return True
+
+        return False
+
+    finally:
+        conn.close()
+
+
+def is_streak_frozen_today(db_path: Path, goal_id: str) -> bool:
+    """Check if streak freeze was used today."""
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    try:
+        today = date.today().isoformat()
+        cursor.execute("""
+            SELECT streak_freeze_used_date FROM streak_state
+            WHERE goal_id = ? AND date(streak_freeze_used_date) = ?
+        """, (goal_id, today))
+
+        return cursor.fetchone() is not None
+
+    finally:
+        conn.close()
+
+
+def get_streak_freezes_available(db_path: Path, goal_id: str) -> int:
+    """Get number of streak freezes available."""
+    conn = sqlite3.connect(db_path)
+    cursor = conn.cursor()
+
+    try:
+        cursor.execute("""
+            SELECT streak_freeze_available FROM streak_state
+            WHERE goal_id = ?
+        """, (goal_id,))
+
+        row = cursor.fetchone()
+        return row[0] if row and row[0] is not None else 1
+
+    finally:
+        conn.close()
