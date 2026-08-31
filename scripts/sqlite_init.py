@@ -10,6 +10,8 @@ from datetime import date
 from pathlib import Path
 from typing import Optional
 
+from scripts.validation import validate_goal_id, validate_goal_type, ValidationError
+
 
 def init_database(
     goal_id: str,
@@ -27,8 +29,14 @@ def init_database(
         Path to the created database file
 
     Raises:
-        OSError: If database cannot be created
+        ValidationError(E004): If goal_id is invalid
+        ValidationError(E005): If goal_type is invalid
+        FileExistsError(E001): If database already exists
     """
+    # Validate inputs BEFORE any filesystem operations
+    validate_goal_id(goal_id)
+    validate_goal_type(goal_type)
+
     db_path = goal_path / "memory.db"
 
     # Check if database already exists to prevent duplicate initialization

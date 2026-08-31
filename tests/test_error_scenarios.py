@@ -8,6 +8,7 @@ import pytest
 from scripts.fsrs_scheduler import FSRSScheduler
 from scripts.research_engine import Claim, ResearchEngine, Source, SourceTier
 from scripts.sqlite_init import init_database
+from scripts.validation import ValidationError
 from scripts.vault_manager import VaultManager
 
 
@@ -21,6 +22,28 @@ class TestGoalErrors:
 
             with pytest.raises(FileExistsError):
                 init_database('test-goal', goal_path, 'exam')
+
+
+class TestDatabaseInputValidation:
+    """Tests for input validation in database initialization."""
+
+    def test_E004_rejects_path_traversal_goal_id(self, tmp_path):
+        """Reject goal_id with path traversal attempt."""
+        with pytest.raises(ValidationError) as exc_info:
+            init_database("../../../etc/passwd", tmp_path)
+        assert exc_info.value.code == "E004"
+
+    def test_E005_rejects_invalid_goal_type(self, tmp_path):
+        """Reject invalid goal_type."""
+        with pytest.raises(ValidationError) as exc_info:
+            init_database("test-goal", tmp_path, goal_type="invalid_type")
+        assert exc_info.value.code == "E005"
+
+    def test_E005_rejects_empty_goal_type(self, tmp_path):
+        """Reject empty goal_type."""
+        with pytest.raises(ValidationError) as exc_info:
+            init_database("test-goal", tmp_path, goal_type="")
+        assert exc_info.value.code == "E005"
 
 
 class TestTopicErrors:
