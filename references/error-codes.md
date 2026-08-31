@@ -10,6 +10,7 @@
 | E300-E399 | Vault errors |
 | E400-E499 | Export errors |
 | E500-E599 | Session errors |
+| E600-E699 | Research errors |
 
 ## Goal Errors (E001-E099)
 
@@ -67,3 +68,14 @@
 | E502 | Session already ended | Start new session |
 | E503 | Performance not recorded | Provide performance score |
 | E504 | Session timeout exceeded | Restart session |
+
+## Research Errors (E600-E699)
+
+| Code | Description | Resolution |
+|------|-------------|------------|
+| E600 | No sources found for topic | Mark "needs manual research" |
+| E601 | Contradicting sources | Document contradiction, recommend verification |
+| E602 | Source fetch failed | Log error, continue with available sources |
+| E603 | Claim unverified | Include with warning, suggest manual review |
+| E604 | Research timeout exceeded | Return partial results |
+| E605 | Invalid source URL | Skip source, continue research |

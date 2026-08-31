@@ -1,6 +1,6 @@
 ---
 name: mit-learning
-description: Intent-driven learning skill for personalized education. Triggers when user wants to learn topics, prepare for exams, practice skills, or track learning progress. Adapts to user's goals, timeline, and baseline.
+description: Intent-driven learning skill for personalized education with comprehensive research capabilities. Triggers when user wants to learn topics, prepare for exams, practice skills, conduct research, or track learning progress. Compiles layered research (Academic + Official → Broad Web → Curated) into single-source summaries. Adapts to user's goals, timeline, and baseline.
 ---
 
 # MIT Learning Skill
@@ -71,6 +71,9 @@ All outputs follow **guided flexibility**:
 | Achievement System | Early wins + layered difficulty |
 | Obsidian Integration | Per-goal vault with knowledge graph |
 | Multi-Goal Isolation | Separate SQLite per goal |
+| **Layered Research** | Academic + Official → Broad Web → Curated |
+| **Single-Source Delivery** | Comprehensive notes, no external reading needed |
+| **Claim Triangulation** | ≥3 sources per claim with confidence scoring |
 
 ## Storage
 
@@ -83,6 +86,9 @@ All outputs follow **guided flexibility**:
 ```
 "I want to learn Python programming"
 → syllabus_generation workflow
+
+"Research quantum computing for my exam"
+→ research + learning_session workflow
 
 "Continue with my current topic"
 → learning_session workflow
@@ -102,6 +108,7 @@ See `references/` directory for:
 - `fsrs-constants.md` - FSRS-6 formulas
 - `vault-setup.md` - Obsidian configuration
 - `achievement-definitions.md` - Gamification specs
+- `research-methodology.md` - Layered research approach
 
 ## Scripts
 
@@ -110,6 +117,39 @@ Bundled Python scripts handle critical operations:
 - `fsrs_scheduler.py` - Spaced repetition
 - `mastery_update.py` - Progress tracking
 - `vault_manager.py` - Obsidian vault operations
+- `research_engine.py` - Layered research compilation
+
+## Research Capability
+
+**Layered approach for comprehensive coverage:**
+
+1. **Tier 1: Academic + Official Sources**
+   - Research papers (arXiv, PubMed, Google Scholar)
+   - Government sources (.gov, .mil)
+   - Institutional documentation (.edu, .org)
+   - Academic publishers (Nature, Science, IEEE)
+
+2. **Tier 2: Broad Web Sources**
+   - News outlets, Wikipedia, blogs
+   - General web search results
+   - Community resources
+
+3. **Tier 3: Curated Sources**
+   - User-specified feeds
+   - Domain-specific databases
+   - Reference works
+
+**Triangulation rules:**
+- Each claim requires ≥3 independent sources
+- Higher tier sources contribute more to confidence
+- Unverified claims flagged for manual review
+- All sources cited with provenance
+
+**Output: Single comprehensive note**
+- User reads nothing else
+- All findings consolidated
+- Confidence scores per claim
+- Complete source bibliography
 
 ## Error Handling
 
