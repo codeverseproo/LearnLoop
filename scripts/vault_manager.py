@@ -9,6 +9,8 @@ from datetime import date, datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
+from scripts.validation import validate_topic_id
+
 
 class VaultManager:
     """Manages Obsidian vault for a learning goal.
@@ -69,7 +71,13 @@ class VaultManager:
 
         Returns:
             Path to the created note file
+
+        Raises:
+            ValidationError(E302): If topic_id is invalid
         """
+        # Validate topic_id BEFORE any filesystem operations
+        validate_topic_id(topic_id)
+
         # Ensure directory exists
         dir_path = self.vault_path / directory
         dir_path.mkdir(parents=True, exist_ok=True)

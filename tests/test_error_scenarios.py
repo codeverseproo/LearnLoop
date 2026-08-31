@@ -131,6 +131,33 @@ class TestVaultErrors:
         # This is expected behavior - VaultManager doesn't pre-validate paths
 
 
+class TestVaultInputValidation:
+    """Tests for input validation in vault operations."""
+
+    def test_E302_rejects_path_traversal_topic_id(self, tmp_path):
+        """Reject topic_id with path traversal."""
+        from scripts.vault_manager import VaultManager
+        from scripts.validation import ValidationError
+
+        vault = VaultManager(tmp_path, "test-goal")
+        vault.create_vault_structure()
+
+        with pytest.raises(ValidationError) as exc_info:
+            vault.write_note("../../etc/passwd", "content")
+        assert exc_info.value.code == "E302"
+
+    def test_E302_rejects_slash_in_topic_id(self, tmp_path):
+        """Reject topic_id containing slash."""
+        from scripts.vault_manager import VaultManager
+        from scripts.validation import ValidationError
+
+        vault = VaultManager(tmp_path, "test-goal")
+
+        with pytest.raises(ValidationError) as exc_info:
+            vault.write_note("subdir/topic", "content")
+        assert exc_info.value.code == "E302"
+
+
 class TestResearchErrors:
     def test_E603_claim_unverified_flagged(self):
         """E603: Claims with <3 sources flagged as unverified."""
