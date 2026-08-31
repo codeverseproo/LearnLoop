@@ -199,3 +199,41 @@ class TestResearchEngine:
         """Minimum sources can be configured."""
         engine = ResearchEngine(min_sources=5)
         assert engine.min_sources == 5
+
+
+class TestResearchEdgeCases:
+    """Test edge cases for research engine."""
+
+    def test_empty_claim_text(self):
+        """Empty claim text should be handled."""
+        claim = Claim(text="")
+        assert claim.text == ""
+        assert claim.is_verified() is False
+
+    def test_source_with_empty_url(self):
+        """Source with empty URL should still create."""
+        engine = ResearchEngine()
+        source = engine.create_source(url="", title="Untitled")
+
+        assert source.url == ""
+        assert source.tier == SourceTier.BROAD_WEB
+
+    def test_claim_with_more_than_three_sources(self):
+        """More than 3 sources should still give 100% confidence."""
+        engine = ResearchEngine()
+        claim = engine.create_claim("Test claim")
+
+        for i in range(5):
+            claim.add_source(engine.create_source(f"https://s{i}.com", f"Source {i}"))
+
+        assert claim.is_verified()
+        assert claim.confidence == 1.0
+        assert len(claim.sources) == 5
+
+    def test_research_result_with_no_claims(self):
+        """Research result with no claims should compile."""
+        result = ResearchResult(topic="Empty Topic", summary="No findings")
+        note = result.compile_note()
+
+        assert "# Empty Topic" in note
+        assert "No findings" in note

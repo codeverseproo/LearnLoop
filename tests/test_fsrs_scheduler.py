@@ -210,3 +210,54 @@ class TestFailsafe:
         )
 
         assert isinstance(next_date, datetime)
+
+
+class TestFSRSEdgeCases:
+    """Test edge cases and boundary conditions."""
+
+    def test_zero_stability(self):
+        """Stability of 0 should be handled (reset to default)."""
+        scheduler = FSRSScheduler()
+
+        next_review, new_s, new_d = scheduler.schedule_next_review(
+            stability=0.0, difficulty=5.0, performance=0.8, state=2
+        )
+
+        # Zero stability gets reset to default (2.5), resulting in ~2 day interval
+        assert new_s == scheduler.stability_default
+        assert isinstance(next_review, datetime)
+
+    def test_maximum_stability(self):
+        """Very high stability should give far future review."""
+        scheduler = FSRSScheduler()
+
+        next_review, new_s, new_d = scheduler.schedule_next_review(
+            stability=365.0, difficulty=3.0, performance=0.95, state=2
+        )
+
+        days_until_review = (next_review - datetime.now()).days
+        assert days_until_review > 30
+
+    def test_minimum_performance(self):
+        """Performance at 0.0 should be handled."""
+        scheduler = FSRSScheduler()
+
+        next_review, new_s, new_d = scheduler.schedule_next_review(
+            stability=10.0, difficulty=5.0, performance=0.0, state=2
+        )
+
+        assert new_s < 10.0
+
+    def test_difficulty_bounds(self):
+        """Difficulty should stay within 1-10 range."""
+        scheduler = FSRSScheduler()
+
+        _, _, new_d_min = scheduler.schedule_next_review(
+            stability=5.0, difficulty=1.0, performance=0.95, state=2
+        )
+        assert 1.0 <= new_d_min
+
+        _, _, new_d_max = scheduler.schedule_next_review(
+            stability=5.0, difficulty=10.0, performance=0.3, state=2
+        )
+        assert new_d_max <= 10.0

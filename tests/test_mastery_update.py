@@ -130,3 +130,43 @@ class TestMasteryUpdate:
         mastery = get_topic_mastery(temp_db, topic_row_id=1)
         # After 10 perfect reviews, mastery should be significant
         assert mastery > 0.3
+
+
+class TestMasteryEdgeCases:
+    """Test edge cases for mastery updates."""
+
+    def test_update_mastery_nonexistent_topic(self):
+        """Updating non-existent topic initializes FSRS state (no error)."""
+        import tempfile
+        from scripts.sqlite_init import init_database
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            goal_path = Path(tmpdir) / 'edge-test'
+            goal_path.mkdir(parents=True)
+            db_path = init_database('edge-test', goal_path, 'exam')
+
+            # Should not raise error - it initializes FSRS state
+            # This is valid behavior per implementation
+            result = update_mastery(db_path, topic_row_id=999, performance=0.9)
+            # Result should be a valid mastery value
+            assert 0.0 <= result <= 1.0
+
+    def test_update_mastery_negative_performance(self):
+        """Negative performance should be rejected."""
+        import tempfile
+        from scripts.sqlite_init import init_database
+
+        with tempfile.TemporaryDirectory() as tmpdir:
+            goal_path = Path(tmpdir) / 'neg-perf'
+            goal_path.mkdir(parents=True)
+            db_path = init_database('neg-perf', goal_path, 'exam')
+
+            conn = sqlite3.connect(db_path)
+            cursor = conn.cursor()
+            cursor.execute("INSERT INTO topics (topic_id, name) VALUES ('T01', 'Test')")
+            topic_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+
+            with pytest.raises(ValueError):
+                update_mastery(db_path, topic_id, -0.5)
