@@ -71,21 +71,16 @@ class Claim:
         self._update_confidence()
 
     def _update_confidence(self):
-        """Update confidence based on source count and tier."""
+        """Update confidence based on source count.
+
+        Normalized so that meeting MIN_SOURCES gives 100% confidence.
+        """
         if len(self.sources) < self.MIN_SOURCES:
             self.needs_verification = True
             self.confidence = len(self.sources) / self.MIN_SOURCES
         else:
             self.needs_verification = False
-            # Higher confidence for higher tier sources
-            tier_weights = {
-                SourceTier.ACADEMIC_OFFICIAL: 1.0,
-                SourceTier.BROAD_WEB: 0.7,
-                SourceTier.CURATED: 0.8
-            }
-            weighted = sum(tier_weights[s.tier] for s in self.sources)
-            max_weighted = self.MIN_SOURCES * 1.0
-            self.confidence = min(1.0, weighted / max_weighted)
+            self.confidence = 1.0
 
     def is_verified(self) -> bool:
         """Check if claim meets minimum source threshold."""

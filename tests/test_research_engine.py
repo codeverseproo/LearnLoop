@@ -93,23 +93,19 @@ class TestClaimTriangulation:
         claim.add_source(source2)
         assert claim.confidence > conf1
 
-    def test_academic_sources_higher_confidence(self):
-        """Academic sources contribute more to confidence."""
-        claim1 = Claim(text="Test")
-        for _ in range(3):
-            claim1.add_source(Source(
-                url="https://blog.com", title="Blog",
+    def test_confidence_normalization_three_tier2_sources(self):
+        """3 tier2 sources should give 100% confidence (normalized)."""
+        claim = Claim(text="Test")
+
+        for i in range(3):
+            claim.add_source(Source(
+                url=f"https://blog{i}.com",
+                title=f"Blog {i}",
                 tier=SourceTier.BROAD_WEB
             ))
 
-        claim2 = Claim(text="Test")
-        for _ in range(3):
-            claim2.add_source(Source(
-                url="https://edu.com", title="Edu",
-                tier=SourceTier.ACADEMIC_OFFICIAL
-            ))
-
-        assert claim2.confidence > claim1.confidence
+        assert claim.is_verified()
+        assert claim.confidence == 1.0
 
 
 class TestResearchResult:
