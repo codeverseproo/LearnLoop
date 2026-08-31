@@ -157,6 +157,18 @@ class TestVaultInputValidation:
             vault.write_note("subdir/topic", "content")
         assert exc_info.value.code == "E302"
 
+    def test_E302_rejects_path_traversal_in_archive_topic(self, tmp_path):
+        """Reject path traversal attempt in archive_topic."""
+        from scripts.vault_manager import VaultManager
+        from scripts.validation import ValidationError
+
+        vault = VaultManager(tmp_path, "test-goal")
+        vault.create_vault_structure()
+
+        with pytest.raises(ValidationError) as exc_info:
+            vault.archive_topic("../../../etc/passwd")
+        assert exc_info.value.code == "E302"
+
 
 class TestResearchErrors:
     def test_E603_claim_unverified_flagged(self):

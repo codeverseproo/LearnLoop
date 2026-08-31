@@ -240,7 +240,13 @@ Last updated: {datetime.now().strftime('%Y-%m-%d %H:%M')}
 
         Args:
             topic_id: Topic identifier
+
+        Raises:
+            ValidationError(E302): If topic_id is invalid
         """
+        # Validate topic_id BEFORE any filesystem operations
+        validate_topic_id(topic_id)
+
         active_path = self.vault_path / "10-Active-Topics" / f"{topic_id}.md"
         archive_path = self.vault_path / "30-Completed-Topics" / f"{topic_id}.md"
 
