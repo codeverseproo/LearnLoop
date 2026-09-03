@@ -43,7 +43,9 @@ Thumbs.db
 
 # Project-specific
 .omc/
-archive/
+.worktrees/
+_archived/
+_deprecated/
 
 # Database files (generated at runtime)
 *.db

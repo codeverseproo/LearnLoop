@@ -34,6 +34,45 @@ Intent-driven learning system with FSRS-6 spaced repetition, streak mechanics, a
 
 ---
 
+## 1.5 Database Initialization
+
+Every new goal auto-initializes its SQLite database.
+
+### Automatic Setup
+
+On `syllabus_generation` workflow trigger:
+
+1. **Generate goal_id** from goal name:
+   - Lowercase, replace spaces with hyphens
+   - Remove special characters
+   - Example: "AWS Solutions Architect" → `aws-solutions-architect`
+
+2. **Check database exists:**
+   - Path: `~/.mit-learning/goals/{goal_id}/memory.db`
+
+3. **If not exists, initialize:**
+   ```bash
+   mkdir -p ~/.mit-learning/goals/{goal_id}
+   sqlite3 ~/.mit-learning/goals/{goal_id}/memory.db < docs/superpowers/mcp-queries/schema.sql
+   ```
+
+4. **Verify initialization:**
+   ```sql
+   PRAGMA integrity_check;
+   ```
+
+### Database Location
+
+| Path | Purpose |
+|------|---------|
+| `~/.mit-learning/` | Base directory |
+| `~/.mit-learning/goals/{goal_id}/memory.db` | Per-goal SQLite |
+| `~/.mit-learning/backups/` | Backup storage |
+
+**Note:** Database initialization runs automatically on every new goal. No manual setup required.
+
+---
+
 ## 2. Twelve Workflows
 
 ### Planning Workflows
@@ -46,7 +85,7 @@ Create structured learning plan from goal.
 |--------|--------|
 | **Triggers** | "I want to learn X", "Create a study plan for Y", "Syllabus for Z exam" |
 | **Prerequisites** | Goal identified, timeline known (optional) |
-| **Steps** | 1. Parse goal type (exam/skill/degree/topic) <br> 2. Identify topics from curriculum/body of knowledge <br> 3. Build prerequisite graph <br> 4. Estimate time per topic <br> 5. Create sequential learning path <br> 6. Initialize SQLite database via MCP: `mkdir -p ~/.mit-learning/goals/{goal_id}` then execute `schema.sql` <br> 7. Write syllabus to vault |
+| **Steps** | 1. Parse goal type (exam/skill/degree/topic) <br> 2. Identify topics from curriculum/body of knowledge <br> 3. Build prerequisite graph <br> 4. Estimate time per topic <br> 5. Create sequential learning path <br> 6. **Auto-initialize database** (see §1.5) <br> 7. Write syllabus to vault |
 | **Outputs** | `~/.mit-learning/goals/{goal_id}/memory.db` with all tables, `00-Dashboard/Syllabus.md` in vault |
 
 #### 2. diagnostic_assessment
@@ -290,7 +329,7 @@ User trigger → SKILL.md → mcp__sqlite__query → Return
 
 ---
 
-## 4. FSRS-6 Constants
+## 5. FSRS-6 Constants
 
 ### Core Parameters
 
@@ -393,7 +432,7 @@ State 3 (Relearning) → State 3          [Performance < 0.6] (stay)
 
 ---
 
-## 5. Backup System
+## 6. Backup System
 
 ### Backup Creation
 
@@ -420,7 +459,7 @@ cp ~/.mit-learning/backups/{backup_file}.db ~/.mit-learning/goals/{goal_id}/memo
 
 ---
 
-## 6. Error Code Quick Reference
+## 7. Error Code Quick Reference
 
 ### E0XX: Input Errors
 
@@ -486,7 +525,7 @@ cp ~/.mit-learning/backups/{backup_file}.db ~/.mit-learning/goals/{goal_id}/memo
 
 ---
 
-## References
+## 8. References
 
 | File | Contents |
 |------|----------|
@@ -497,7 +536,7 @@ cp ~/.mit-learning/backups/{backup_file}.db ~/.mit-learning/goals/{goal_id}/memo
 | `references/achievement-definitions.md` | Gamification specifications |
 | `references/research-methodology.md` | Layered research approach |
 
-## Scripts
+## 9. Scripts
 
 | Script | Purpose |
 |--------|---------|

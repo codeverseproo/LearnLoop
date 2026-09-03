@@ -93,11 +93,9 @@ The skill shows:
    cp -r MIT/ ~/.claude/skills/mit-learning/
    ```
 
-2. **Database initialization:**
-   ```bash
-   mkdir -p ~/.mit-learning/goals/{goal_id}
-   sqlite3 ~/.mit-learning/goals/{goal_id}/memory.db < docs/superpowers/mcp-queries/schema.sql
-   ```
+2. **First goal creation auto-initializes database:**
+   Say: "I want to learn TypeScript fundamentals"
+   The skill automatically creates `~/.mit-learning/goals/typescript-fundamentals/memory.db`
 
 3. **Verify installation:**
    ```bash
