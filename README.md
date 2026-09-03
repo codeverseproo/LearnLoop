@@ -158,7 +158,7 @@ Where:
 ## Installation
 
 ### Prerequisites
-- Python 3.11 or higher
+- SQLite3 (standard on macOS/Linux)
 - Obsidian (optional, for vault integration)
 
 ### Setup
@@ -169,15 +169,10 @@ Where:
    cp -r MIT/ ~/.claude/skills/mit-learning/
    ```
 
-2. **Install dependencies:**
+2. **Verify installation:**
    ```bash
-   pip install pytest  # For running tests
-   ```
-
-3. **Verify installation:**
-   ```bash
-   python3 -m pytest tests/ -v
-   # Should show 55 tests passing
+   sqlite3 --version
+   # SQLite MCP queries are ready to use
    ```
 
 ---
@@ -186,27 +181,20 @@ Where:
 
 ```
 MIT/
-├── SKILL.md                    # Main skill instructions (121 lines)
+├── SKILL.md                    # Main skill instructions
 ├── README.md                   # This file
-├── .gitignore                  # Ignore patterns
-├── scripts/                    # Core Python modules
-│   ├── __init__.py            # Package init
-│   ├── sqlite_init.py         # Database initialization (8 tables)
-│   ├── fsrs_scheduler.py      # FSRS-6 algorithm implementation
-│   ├── mastery_update.py      # Progress tracking
-│   └── vault_manager.py       # Obsidian vault operations
-├── tests/                      # Test suite (55 tests)
-│   ├── test_sqlite_init.py
-│   ├── test_fsrs_scheduler.py
-│   ├── test_mastery_update.py
-│   ├── test_vault_manager.py
-│   └── test_workflows.py
-└── references/                 # Documentation
-    ├── error-codes.md          # E001-E599 definitions
-    ├── fsrs-constants.md       # FSRS-6 formulas and defaults
-    ├── vault-setup.md          # Obsidian configuration
-    ├── achievement-definitions.md  # Gamification specs
-    └── workflows-extended.md   # Detailed workflow steps
+├── docs/
+│   └── superpowers/
+│       └── mcp-queries/        # SQLite MCP query templates
+│           ├── README.md       # Query documentation
+│           ├── schema.sql      # Database initialization (8 tables)
+│           ├── fsrs.sql        # FSRS-6 algorithm in SQL
+│           ├── learning.sql    # Learning session queries
+│           ├── review.sql      # Review session queries
+│           ├── practice.sql    # Practice session queries
+│           ├── research.sql    # Research workflow queries
+│           ├── streak.sql      # Streak tracking queries
+│           └── backup.sql      # Backup operations
 ```
 
 ---
@@ -351,15 +339,16 @@ All errors use codes E001-E599. See `references/error-codes.md` for details.
 
 ## Testing
 
-Run the full test suite:
+Run the SQL test suite:
 
 ```bash
-PYTHONPATH=. python3 -m pytest tests/ -v
+cd docs/superpowers/tests
+./run_tests.sh
 ```
 
 Expected output:
 ```
-55 passed in ~0.5s
+✓ All 11 tests passed
 ```
 
 ---
@@ -374,7 +363,7 @@ MIT License - See LICENSE file for details.
 
 | Version | Date | Changes |
 |---------|------|---------|
-| 1.0.0 | 2026-08-31 | Initial release with 12 workflows, FSRS-6, gamification |
+| 1.0.0 | 2026-09-03 | Pure SQLite MCP architecture, zero Python dependency |
 
 ---
 
