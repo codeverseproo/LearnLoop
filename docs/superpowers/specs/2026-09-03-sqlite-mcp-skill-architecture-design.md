@@ -312,6 +312,42 @@ Skill Actions:
 
 ---
 
+## 10. Expert Panel Improvements (Already Approved)
+
+From expert panel analysis, 7 improvements to implement via skill-level + MCP:
+
+### 10.1 Spaced Delivery Optimization
+- **MCP:** Add `complexity_score`, `delivery_mode`, `estimated_duration_minutes` to topics
+- **Skill:** Detect complexity via topic analysis, route to streaming/batch/hybrid
+
+### 10.2 Mastery Prediction Model
+- **MCP:** New tables `velocity_snapshots`, `topic_difficulty_classifications`
+- **Skill:** Track learning velocity, classify difficulty for prediction
+
+### 10.3 Interleaved Topic Suggestion
+- **Skill:** Detect plateau (3+ sessions with mastery 0.4-0.6)
+- **Trigger:** "Suggest mixed practice" → query related topics
+
+### 10.4 Collaborative Note Refinement
+- **Skill:** Pre-generation structure prompt, user preferences capture
+- **MCP:** Store preferences in sessions table
+
+### 10.5 Knowledge Decay Alerts
+- **MCP:** Query `fsrs_state` for `retrievability < 0.7`
+- **Skill:** Alert user when topics approaching decay threshold
+
+### 10.6 Multi-Modal Explanation Library
+- **MCP:** Add `preferred_mode` to topics (visual/analytical/intuitive/kinesthetic)
+- **Skill:** Detect preferred mode, route to appropriate explanation style
+
+### 10.7 Learning Outcome Analytics
+- **MCP:** Track `duration_seconds`, `mastery_before`, `mastery_after`, `aha_moment`
+- **Skill:** Calculate efficiency scores, surface breakthrough patterns
+
+**Implementation Note:** All 7 improvements use MCP schema extensions + skill logic — NO Python modules.
+
+---
+
 **Design Version:** 1.0.0
 **Author:** Claude + User collaboration
 **Approved:** ⏳ Pending user review
