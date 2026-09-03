@@ -1,0 +1,13 @@
+{
+  "storyId": "MIT-001",
+  "status": "passed",
+  "completedAt": "2026-09-03T10:05:00Z",
+  "acceptanceCriteria": [
+    {"criterion": "MCP queries directory exists", "passed": true},
+    {"criterion": "8 SQL files created", "passed": true},
+    {"criterion": "README documents structure", "passed": true},
+    {"criterion": "Schema has all tables", "passed": true},
+    {"criterion": "FSRS calculations present", "passed": true},
+    {"criterion": "SKILL.md has MCP section", "passed": true}
+  ]
+}
