@@ -46,6 +46,8 @@ Thumbs.db
 .worktrees/
 _archived/
 _deprecated/
+docs/superpowers/plans/
+.claude/afc/
 
 # Database files (generated at runtime)
 *.db

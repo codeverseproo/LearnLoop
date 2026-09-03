@@ -110,14 +110,14 @@ The skill shows:
 
 | Feature | Description | Benefit |
 |---------|-------------|---------|
-| **Intent-Driven** | No commands to memorize - just say what you want | Natural conversation |
+| **Research-Based Syllabus** | 4 parallel agents (official/academic/practical/expert) | Comprehensive coverage |
+| **Hidden Topic Detection** | 3 methods: complexity, error patterns, expert practice | No blind spots |
+| **Knowledge Graph** | Prerequisite + related + cross-domain links | Connected learning |
+| **Critic Quality Loop** | 9 checks, max 3 rounds, satisfaction criteria | Verified syllabus |
 | **FSRS-6 Scheduler** | Free Spaced Repetition Scheduler algorithm | 20-30% fewer reviews |
 | **Pure SQLite MCP** | Zero Python dependency | Simpler architecture |
 | **Streak System** | Loss aversion mechanic with streak freeze | 3.6x higher engagement |
-| **Achievement System** | Early wins + layered difficulty | Sustained motivation |
-| **Obsidian Integration** | Per-goal vault with knowledge graph | Visual connections |
 | **Multi-Goal Isolation** | Separate SQLite database per goal | Organized progress |
-| **Claim Triangulation** | ≥3 sources per research claim | Verified information |
 
 ---
 
@@ -127,7 +127,7 @@ The skill shows:
 
 | Workflow | Description | Trigger Example |
 |----------|-------------|-----------------|
-| `syllabus_generation` | Create learning plan from goal | "I want to learn Python" |
+| `syllabus_generation` | Research-based plan with hidden topic detection | "I want to learn Python" |
 | `diagnostic_assessment` | Evaluate baseline before starting | "Test my current knowledge" |
 | `study_schedule_optimization` | Optimize daily/weekly schedule | "Plan my study schedule" |
 
@@ -188,14 +188,16 @@ The skill shows:
 └─────────────────────────────────────────────────────┘
 ```
 
-### Database Schema (8 Tables)
+### Database Schema (10 Tables)
 
 ```sql
 goal_meta        -- Goal configuration
-topics           -- Topics with mastery tracking
+topics           -- Topics with mastery, confidence, hidden flags
 fsrs_state       -- FSRS-6 state per topic
 sessions         -- Learning/review session history
 prerequisites    -- Topic dependency graph
+topic_links      -- Related/cross-domain connections
+topic_sources    -- Source citations per topic
 note_registry    -- Obsidian vault links
 streak_state     -- Daily streak tracking
 achievements     -- Unlocked achievements
@@ -492,6 +494,7 @@ This skill follows:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.1.0 | 2026-09-03 | Research-based syllabus: 4 parallel agents, hidden topics, knowledge graph, critic loop |
 | 1.0.0 | 2026-09-03 | Pure SQLite MCP architecture, zero Python dependency |
 
 ---
