@@ -182,7 +182,32 @@ Daily current events (exam prep).
 
 ---
 
-## 3. 50+ Natural Language Triggers
+## 3. MCP Query Templates
+
+All data operations use SQLite MCP queries from `docs/superpowers/mcp-queries/`.
+
+### Usage Pattern
+
+```
+User trigger → SKILL.md → mcp__sqlite__query → Return
+```
+
+### Query Files
+
+| File | Purpose | Workflows |
+|------|---------|-----------|
+| schema.sql | Database initialization | New goal setup |
+| fsrs.sql | FSRS-6 calculations | Review, Learning |
+| learning.sql | Learning sessions | learning_session |
+| review.sql | Review management | review_session |
+| practice.sql | Practice tracking | practice_session |
+| research.sql | Research storage | research |
+| streak.sql | Gamification | progress_dashboard |
+| backup.sql | Safety | Manual trigger |
+
+---
+
+## 4. 50+ Natural Language Triggers
 
 ### Learning Intents (15)
 
