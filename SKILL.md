@@ -393,7 +393,34 @@ State 3 (Relearning) → State 3          [Performance < 0.6] (stay)
 
 ---
 
-## 5. Error Code Quick Reference
+## 5. Backup System
+
+### Backup Creation
+
+```bash
+# Manual backup
+cp ~/.mit-learning/goals/{goal_id}/memory.db ~/.mit-learning/backups/{goal_id}_$(date +%Y%m%d).db
+
+# Automatic daily backup (cron)
+0 0 * * * cp ~/.mit-learning/goals/*/memory.db ~/.mit-learning/backups/$(date +\%Y\%m\%d)/
+```
+
+### Verification
+
+```sql
+PRAGMA integrity_check;
+SELECT 'topics' AS tbl, COUNT(*) FROM topics;
+```
+
+### Restore
+
+```bash
+cp ~/.mit-learning/backups/{backup_file}.db ~/.mit-learning/goals/{goal_id}/memory.db
+```
+
+---
+
+## 6. Error Code Quick Reference
 
 ### E0XX: Input Errors
 
