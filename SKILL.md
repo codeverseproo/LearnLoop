@@ -79,14 +79,228 @@ On `syllabus_generation` workflow trigger:
 
 #### 1. syllabus_generation
 
-Create structured learning plan from goal.
+Create research-based learning plan with hidden topic detection.
 
 | Aspect | Detail |
 |--------|--------|
 | **Triggers** | "I want to learn X", "Create a study plan for Y", "Syllabus for Z exam" |
 | **Prerequisites** | Goal identified, timeline known (optional) |
-| **Steps** | 1. Parse goal type (exam/skill/degree/topic) <br> 2. Identify topics from curriculum/body of knowledge <br> 3. Build prerequisite graph <br> 4. Estimate time per topic <br> 5. Create sequential learning path <br> 6. **Auto-initialize database** (see §1.5) <br> 7. Write syllabus to vault |
-| **Outputs** | `~/.mit-learning/goals/{goal_id}/memory.db` with all tables, `00-Dashboard/Syllabus.md` in vault |
+| **Steps** | See §2.1 Research-Based Syllabus Generation (9 steps) |
+| **Outputs** | SQLite with all tables + topic_links + topic_sources, `00-Dashboard/Syllabus.md` |
+
+---
+
+### §2.1 Research-Based Syllabus Generation (9 Steps)
+
+#### Step 1: Parse Goal (Hybrid)
+
+**Deterministic parsing (cannot fail):**
+```json
+{
+  "goal_id": "aws-solutions-architect",
+  "goal_type": "exam",
+  "subject": "AWS Solutions Architect",
+  "keywords": ["AWS", "Solutions Architect", "SAA", "certification"],
+  "timeline": "3 months",
+  "raw_goal": "I want to pass the AWS Solutions Architect exam in 3 months"
+}
+```
+
+**Pass to each agent:**
+- Structured data (goal_type, subject, keywords)
+- Raw goal (fallback if parsing unclear)
+
+#### Step 2: Database Initialization
+
+See §1.5 - Auto-initialize `~/.mit-learning/goals/{goal_id}/memory.db`
+
+#### Step 3: Launch Discovery Agents (Parallel)
+
+Spawn 4 agents simultaneously using `Agent` tool:
+
+| Agent | Prompt File | Source Focus |
+|-------|-------------|--------------|
+| Agent 1 | `prompts/discovery-agent-official.md` | Curriculum, vendor docs |
+| Agent 2 | `prompts/discovery-agent-academic.md` | Papers, textbooks |
+| Agent 3 | `prompts/discovery-agent-practical.md` | Tutorials, blogs, forums |
+| Agent 4 | `prompts/discovery-agent-expert.md` | Production, case studies |
+
+**Each agent returns:**
+- topics[] with sources
+- hidden_topics[] with detection method
+- prerequisites{}
+- related_topics{}
+- cross_domain{}
+- confidence score
+
+#### Step 4: Merge Results
+
+**Merge logic:**
+1. Union all topics (dedupe by name similarity)
+2. Calculate confidence per topic: avg(agent confidence) × source_count_factor
+3. Cross-validate: topics in ≥3 sources = high confidence
+4. Topics in 1-2 sources = needs verification (flag)
+5. Aggregate hidden topics with detection method
+6. Union all prerequisite links
+7. Union all related and cross-domain links
+
+**Fail-safety:**
+- If 1 agent fails: proceed with 3 agents, note in warnings
+- If 2+ agents fail: prompt user to retry
+
+#### Step 5: Build Knowledge Graph
+
+**Create links in SQLite:**
+
+| Link Type | Source | Storage |
+|-----------|--------|---------|
+| prerequisite | Agents (prerequisites{}) | `prerequisites` table |
+| enabled_by | Derived (reverse of prerequisite) | `topic_links` table |
+| related_to | Agents (related_topics{}) | `topic_links` table |
+| cross_domain | Agents (cross_domain{}) | `topic_links` table |
+
+**Insert queries:**
+```sql
+-- Prerequisites
+INSERT INTO prerequisites (topic_id, prerequisite_id) VALUES (?, ?);
+
+-- Other links
+INSERT INTO topic_links (from_topic, to_topic, link_type, confidence)
+VALUES (?, ?, 'related_to', ?);
+```
+
+#### Step 6: Run Critic Loop (Max 3 Rounds)
+
+Launch critic agent with merged research:
+- Read: `prompts/critic-agent.md`
+- Input: merged JSON from Step 4
+- Output: verdict + challenges
+
+**Critic verdict handling:**
+- `reject`: Identify gaps from challenges → re-research specific topics → back to Step 3 (max 2 re-research rounds)
+- `approve_with_warnings`: Present warnings to user → user accepts or requests fixes
+- `approve`: Proceed to Step 7
+
+**Max iterations:**
+- 3 critic rounds total
+- If still rejected after 3: force approve with warnings
+
+#### Step 7: Check Satisfaction Criteria
+
+Verify 7 criteria:
+
+| # | Criterion | Pass Threshold |
+|---|-----------|----------------|
+| 1 | Minimum sources | ≥3 per core topic |
+| 2 | Hidden topic coverage | All 3 detection methods ran |
+| 3 | Prerequisites checked | All topics have entry |
+| 4 | Critic approved | No critical challenges |
+| 5 | Cross-validation | ≥50% topic overlap |
+| 6 | Recency | Sources ≤2 years old |
+| 7 | Goal type fit | Topic count matches |
+
+**If criteria fail:**
+- Critical: Re-research (max 2 rounds)
+- Warnings: Proceed with flags
+
+#### Step 8: Generate Syllabus
+
+**Create `00-Dashboard/Syllabus.md` in Obsidian vault:**
+
+Structure:
+```markdown
+# {Goal Name} Syllabus
+
+**Generated:** {date}
+**Goal Type:** {type}
+**Timeline:** {timeline}
+**Total Topics:** {n}
+**Hidden Topics Found:** {m}
+
+---
+
+## Executive Summary
+{Synthesis of research}
+
+---
+
+## Core Topics (High Confidence)
+| # | Topic | Prerequisites | Sources | Confidence |
+|---|-------|---------------|---------|------------|
+...
+
+## Hidden Topics
+| # | Topic | Detection Method | Reason |
+|---|-------|------------------|--------|
+...
+
+## Knowledge Graph
+### Prerequisite Chain
+{ASCII tree}
+
+### Related Topics
+{Bulleted lists}
+
+### Cross-Domain Bridges
+{Bulleted lists}
+
+---
+
+## Source Bibliography
+{Table by topic}
+
+---
+
+## Warnings
+{Any criteria warnings}
+```
+
+#### Step 9: Store in SQLite
+
+**Insert topics:**
+```sql
+INSERT INTO topics (topic_id, name, confidence, source_count, is_hidden, detection_method, status)
+VALUES (?, ?, ?, ?, ?, ?, 'pending');
+
+INSERT INTO topic_sources (topic_id, source_type, source_title, source_url, source_date)
+VALUES (?, ?, ?, ?, ?);
+
+INSERT INTO topic_links (from_topic, to_topic, link_type, confidence, source)
+VALUES (?, ?, ?, ?, ?);
+
+INSERT INTO prerequisites (topic_id, prerequisite_id)
+VALUES (?, ?);
+```
+
+**Update goal_meta:**
+```sql
+UPDATE goal_meta
+SET total_topics = (SELECT COUNT(*) FROM topics WHERE is_hidden = 0),
+    mastered_topics = 0
+WHERE goal_id = ?;
+
+INSERT INTO streak_state (goal_id) VALUES (?);
+```
+
+---
+
+## Research Output Example
+
+```json
+{
+  "satisfied": true,
+  "criteria": {
+    "sources": {"pass": true, "avg_per_topic": 4.2},
+    "hidden_detection": {"pass": true, "methods_run": 3, "found": 12},
+    "prerequisites": {"pass": true, "coverage": 0.95},
+    "critic": {"pass": true, "rounds": 2, "warnings": 3},
+    "cross_validation": {"pass": true, "overlap": 0.52},
+    "recency": {"pass": true, "avg_age_months": 8},
+    "goal_fit": {"pass": true, "topic_count": 45, "goal_type": "exam"}
+  },
+  "warnings": ["Topic 'Edge Cases' has 2 sources only"]
+}
+```
 
 #### 2. diagnostic_assessment
 
