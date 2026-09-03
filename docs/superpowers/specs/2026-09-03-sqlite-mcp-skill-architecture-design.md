@@ -300,7 +300,105 @@ Skill Actions:
 
 ---
 
-## 9. Next Steps
+## 9. Data Safety & Documentation
+
+### 9.1 SQLite Database Backup
+
+**Problem:** SQLite is a single file — accidental deletion, corruption, or failed migration means total data loss.
+
+**Backup Strategy:**
+
+| Method | Frequency | Implementation |
+|--------|-----------|----------------|
+| **Automatic Backup** | Before any schema change | MCP query copies `memory.db` → `memory.db.backup-{timestamp}` |
+| **Daily Backup** | Once per day | Skill trigger "backup my progress" or scheduled via MCP |
+| **Export to Obsidian** | Weekly | Dump all topics, sessions, FSRS state to Markdown in vault |
+
+**MCP Backup Query:**
+```sql
+-- Before schema migration
+ATTACH DATABASE '~/.mit-learning/goals/{goal_id}/memory.db.backup-' || strftime('%Y%m%d-%H%M%S', 'now') AS backup;
+SELECT sql FROM sqlite_master WHERE type='table';
+-- Recreate tables in backup, copy data
+DETACH DATABASE backup;
+```
+
+**Restore Procedure:**
+```
+Trigger: "Restore my progress from backup"
+
+Skill Actions:
+1. List available backups: `ls ~/.mit-learning/goals/{goal_id}/memory.db.backup-*`
+2. User selects backup by date
+3. Close current connection
+4. Copy backup → memory.db
+5. Verify integrity: PRAGMA integrity_check
+6. Report success/failure
+```
+
+### 9.2 README.md Structure
+
+**File:** `README.md` at repo root
+
+**Sections:**
+
+```markdown
+# MIT Learning Skill
+
+The world's most powerful learning skill — pure skill-level architecture with SQLite MCP.
+
+## Features
+- FSRS-6 spaced repetition (20-30% fewer reviews)
+- 12 learning workflows
+- 50+ natural language triggers
+- Three-tier memory (Session → SQLite → Obsidian)
+- Multi-goal isolation (3 concurrent goals)
+- Gamification (streaks, achievements)
+- Expert panel improvements
+
+## Quick Start
+\`\`\`
+User: "I want to learn Python for data science"
+→ Skill creates goal, builds syllabus, starts learning
+\`
+
+User: "What's due for review?"
+→ Skill queries SQLite MCP, presents review queue
+\`
+\`\`\`
+
+## Installation
+1. Clone repo
+2. Add SKILL.md to Claude Code skills
+3. Configure Obsidian vault path (optional)
+4. Start learning
+
+## Architecture
+- SKILL.md: Natural language triggers + workflow definitions
+- SQLite MCP: All data operations (no Python scripts)
+- Obsidian: Knowledge storage (COLD tier)
+
+## Backup & Safety
+- Automatic backup before schema changes
+- Daily backup option
+- Export to Markdown in Obsidian vault
+
+## Documentation
+- [Architecture Design](docs/superpowers/specs/2026-09-03-sqlite-mcp-skill-architecture-design.md)
+- [FSRS-6 Algorithm](docs/FSRS-6-ALGORITHM.md)
+- [Workflows Reference](docs/WORKFLOWS-COMPLETE.md)
+- [Error Codes](references/error-codes.md)
+
+## License
+MIT
+
+## Contributing
+PRs welcome — please read architecture doc first.
+```
+
+---
+
+## 10. Next Steps
 
 1. ✅ Design spec documented
 2. ⏳ User approval
