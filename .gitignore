@@ -47,7 +47,9 @@ Thumbs.db
 _archived/
 _deprecated/
 docs/superpowers/plans/
+docs/superpowers/specs/
 .claude/afc/
+references/
 
 # Database files (generated at runtime)
 *.db
