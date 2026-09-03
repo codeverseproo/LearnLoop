@@ -46,8 +46,8 @@ Create structured learning plan from goal.
 |--------|--------|
 | **Triggers** | "I want to learn X", "Create a study plan for Y", "Syllabus for Z exam" |
 | **Prerequisites** | Goal identified, timeline known (optional) |
-| **Steps** | 1. Parse goal type (exam/skill/degree/topic) <br> 2. Identify topics from curriculum/body of knowledge <br> 3. Build prerequisite graph <br> 4. Estimate time per topic <br> 5. Create sequential learning path <br> 6. Initialize SQLite database <br> 7. Write syllabus to vault |
-| **Outputs** | `memory.db` with topics table, `00-Dashboard/Syllabus.md` in vault |
+| **Steps** | 1. Parse goal type (exam/skill/degree/topic) <br> 2. Identify topics from curriculum/body of knowledge <br> 3. Build prerequisite graph <br> 4. Estimate time per topic <br> 5. Create sequential learning path <br> 6. Initialize SQLite database via MCP: `mkdir -p ~/.mit-learning/goals/{goal_id}` then execute `schema.sql` <br> 7. Write syllabus to vault |
+| **Outputs** | `~/.mit-learning/goals/{goal_id}/memory.db` with all tables, `00-Dashboard/Syllabus.md` in vault |
 
 #### 2. diagnostic_assessment
 
