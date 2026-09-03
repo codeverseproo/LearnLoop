@@ -327,8 +327,13 @@ Where:
 
 #### Stability Update (Success)
 
+**SQL Implementation** (see `docs/superpowers/mcp-queries/fsrs.sql`):
+
+```sql
+ UPDATE fsrs_state
+ SET stability = MIN(365.0, stability * (1 + (11.0 - difficulty) * 0.1 * (1 + (:performance - 0.6) * 2) * (1 + SQRT(stability)/10.0) * (0.5 + :retrievability)))
+ WHERE topic_id = :topic_id AND :performance >= 0.6;
 ```
-S' = S * (1 + f(D) * 0.1 * p_factor * f(S) * f(R))
 
 Where:
 - f(D) = 11 - difficulty
