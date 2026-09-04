@@ -615,6 +615,150 @@ Daily current events (exam prep).
 
 ---
 
+## Agent Orchestration: Two-Tier Wave System
+
+**Current Date Injection:**
+
+All agent spawns MUST include current date in ISO-8601 format:
+
+```
+Current Date: 2026-09-04
+```
+
+Use for:
+- Recency verification (≤2 years for exam goals)
+- Source staleness filtering
+- Exam schedule validation
+
+---
+
+### Wave 1: Discovery Agents (4 agents, parallel)
+
+**Execute:**
+
+1. Inject current date into agent prompts
+2. Spawn all 4 discovery agents in single message:
+   ```
+   Agent(subagent_type="learnloop:discovery-official", name="official-researcher", ...)
+   Agent(subagent_type="learnloop:discovery-academic", name="academic-researcher", ...)
+   Agent(subagent_type="learnloop:discovery-practical", name="practical-researcher", ...)
+   Agent(subagent_type="learnloop:discovery-expert", name="expert-researcher", ...)
+   ```
+3. Wait for all 4 to complete (barrier)
+4. Run gate: `wave1-discovery.sql`
+5. If FAIL: retry missing agents (max 2 retries)
+
+**Gate Check:**
+```sql
+sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/wave1-discovery.sql
+```
+
+---
+
+### Wave 2: Deep-Dive Agents (0-10 agents, batched)
+
+**Execute:**
+
+1. Merge Wave 1 results
+2. Identify complex topics:
+   ```sql
+   SELECT topic_id, name, complexity
+   FROM topics
+   WHERE complexity >= 7 OR source_count < 3;
+   ```
+3. Spawn deep-dive agents in batches of 4:
+   - Batch 1: topics[0:4]
+   - Batch 2: topics[4:8] (if needed)
+   - Batch 3: topics[8:10] (max 10)
+4. Wait for each batch to complete before next
+5. Run gate: `wave2-deep-dive.sql`
+
+---
+
+### Wave 3: Critic Agent (1 agent, with date context)
+
+**Execute:**
+
+1. Merge Wave 1 + Wave 2 results
+2. Spawn critic agent with current date:
+   ```markdown
+   **Critic Prompt:**
+
+   Current Date: 2026-09-04
+
+   Verify:
+   - Research completeness (≥3 sources per topic)
+   - Hidden topic detection (3 methods used)
+   - Source recency (≤2 years for exam goals)
+   - Triangulation (≥3 agent types)
+
+   Verdict options: APPROVED | APPROVED_WITH_WARNINGS | REJECT
+   ```
+3. Wait for verdict
+4. If APPROVED/APPROVED_WITH_WARNINGS: proceed to Wave 5 (Output)
+5. If REJECT: proceed to Wave 4 (Repair)
+
+---
+
+### Wave 4: Repair Loop (max 3 cycles)
+
+**Execute:**
+
+```
+WHILE critic_verdict == "reject" AND repair_cycles < 3:
+
+  1. Extract challenges from critic verdict
+  2. Categorize: research_gap | detection_missing | validation_failed | quality_issue
+  3. Spawn repair agents (max 5, one per challenge type)
+  4. Wait for repairs to complete
+  5. Re-run critic (Wave 3)
+  6. If APPROVED: exit loop
+  7. If still REJECT and cycles < 3: continue
+
+If max cycles reached and still REJECT:
+  - Generate partial output with warnings
+  - Flag for manual review
+```
+
+**Exit Conditions:**
+- Critic verdict != "reject" (satisfied)
+- Max cycles (3) reached → partial output
+- User cancellation
+
+---
+
+### Budget Tracking (Advisory, Not Blocking)
+
+After each wave, emit budget status:
+
+```sql
+sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/budget-check.sql
+```
+
+**Warnings:**
+- 10+ agents: ℹ️ High agent usage
+- 15+ agents: ⚠️ 75% budget used
+- 20+ agents: ⚠️ Budget exhausted
+
+**IMPORTANT:** Budget warnings do NOT stop execution. Advisory only.
+
+---
+
+### Phase Transition Guards
+
+**Between each phase:**
+
+1. Verify database state with SQL gate
+2. If gate fails: retry (max 2) or report issue
+3. If gate passes: proceed to next wave
+
+**Guards prevent:**
+- Skipping discovery agents
+- Proceeding with incomplete research
+- Outputting without critic approval
+
+---
+
 ## 3. MCP Query Templates
 
 All data operations use SQLite MCP queries from `docs/learnloop/mcp-queries/`.
