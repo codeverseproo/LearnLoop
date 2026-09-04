@@ -32,7 +32,7 @@ LIMIT 20;
 UPDATE fsrs_state
 SET
     stability = MIN(365.0, stability * (1 + (11.0 - difficulty) * 0.1 * (1 + (:performance - 0.6) * 2) * (1 + SQRT(stability)/10.0) * (0.5 + :retrievability))),
-    difficulty = MIN(10.0, MAX(1.0, difficulty + (5.0 - difficulty) * 0.01 + (1 - :performance) * 0.2)),
+    difficulty = MIN(10.0, MAX(1.0, difficulty + (5.0 - difficulty) * 0.15 + (1 - :performance) * 0.2)),
     state = CASE
         WHEN state = 0 THEN 1
         WHEN state = 1 AND :performance >= 0.6 THEN 2
@@ -41,7 +41,7 @@ SET
         ELSE state
     END,
     last_review = CURRENT_TIMESTAMP,
-    next_review = datetime('now', '+' || CAST(MIN(365, stability * 1.1) AS INTEGER) || ' days'),
+    next_review = datetime('now', '+' || CAST(ROUND(9.0 * stability * (POWER(0.9, -1) - 1)) AS INTEGER) || ' days'),
     reviews = reviews + 1
 WHERE topic_id = :topic_id AND :performance >= 0.6;
 
@@ -53,7 +53,7 @@ WHERE topic_id = :topic_id AND :performance >= 0.6;
 UPDATE fsrs_state
 SET
     stability = MAX(1.0, stability * (0.5 + :performance * 0.5)),
-    difficulty = MIN(10.0, MAX(1.0, difficulty + (5.0 - difficulty) * 0.01 + (1 - :performance) * 0.2)),
+    difficulty = MIN(10.0, MAX(1.0, difficulty + (5.0 - difficulty) * 0.15 + (1 - :performance) * 0.2)),
     state = CASE
         WHEN state = 2 THEN 3
         WHEN state = 1 THEN 1

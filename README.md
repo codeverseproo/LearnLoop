@@ -526,6 +526,7 @@ All errors use codes E001-E699. See SKILL.md for details.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.0.1 | 2026-09-04 | Critical P0 fixes: telemetry race condition, FSRS formula correction, quality gates, timeout handling, WebSearch enforcement, error registry |
 | 2.0.0 | 2026-09-04 | Orchestrator state machine with mandatory blocking guards, telemetry tracking, budget enforcement, critic repair loop (max 5 cycles) |
 | 1.2.0 | 2026-09-04 | 3-stage interview system: onboarding, per-goal, per-note with JSON storage |
 | 1.1.0 | 2026-09-03 | Research-based syllabus: 4 parallel agents, hidden topics, knowledge graph, critic loop |

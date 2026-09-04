@@ -175,6 +175,17 @@ WHERE goal_id = :goal_id AND phase = 'WAVE1' AND completed_at IS NULL;
 
 **Timeout:** 120 seconds
 
+**Timeout Recovery Protocol:**
+```
+ON CRITIC_TIMEOUT (120s):
+  1. INSERT INTO phase_telemetry (goal_id, phase, error_code, phase_status, success)
+     VALUES (:goal_id, 'WAVE3', 'E501', 'failed', 0);
+  2. Check execution_state.attempts:
+     - IF attempts < max_attempts: Retry critic spawn (max 1 retry)
+     - IF attempts >= max_attempts: APPROVED_WITH_WARNINGS with confidence=0.5
+  3. Log timeout to agent_spawn_log with status='timeout'
+```
+
 **Verdict Storage:**
 ```sql
 INSERT INTO critic_verdict (goal_id, verdict, confidence, warnings_count, challenges, repair_cycle)
