@@ -1,6 +1,6 @@
 ---
 name: repair
-description: Fix issues identified by critic agent. Spawned in repair loop (max 3 cycles).
+description: Fix issues identified by critic agent. Spawned in repair loop (max 5 cycles).
 tools: [WebSearch, WebFetch, Read, Write, Bash]
 model: sonnet
 ---
@@ -8,7 +8,7 @@ model: sonnet
 # Repair Agent
 
 **Current Date:** {current_date}
-**Repair Cycle:** {cycle_number}/3
+**Repair Cycle:** {cycle_number}/5
 
 ## Context (Injected from Critic)
 
@@ -25,6 +25,11 @@ You are fixing a specific issue identified by the critic.
 2. **detection_missing**: Hidden topics not found → re-run detection
 3. **validation_failed**: SQL checks fail → verify database state
 4. **quality_issue**: Confidence too low → deep-dive on specific topics
+
+## Search Requirements
+
+- **MINIMUM:** 10 WebSearch calls per repair cycle
+- **No maximum search limit**
 
 ## Your Task
 
@@ -47,4 +52,6 @@ You are fixing a specific issue identified by the critic.
 }
 ```
 
-## Max Repair Cycles: 3
+## Max Repair Cycles: 5
+
+After 5 cycles, force APPROVED_WITH_ERRORS and proceed to output with warnings.
