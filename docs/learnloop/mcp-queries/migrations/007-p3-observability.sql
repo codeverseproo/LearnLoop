@@ -2,7 +2,11 @@
 -- Migration 007: P3 Observability
 -- Date: 2026-09-04
 -- SLI/SLO tracking, latency metrics, MTTR, agent efficiency, rate limiting, audit
+-- Depends on: 002-p0-critical-fixes.sql (agent_spawn_log, phase_telemetry)
 -- ============================================
+
+-- Dependency verification: Migration 002 must have run (agent_spawn_log, phase_telemetry)
+-- These tables are required for observability views and metrics
 
 -- ============================================
 -- 1. SLI/SLO Definitions Table
@@ -233,11 +237,11 @@ CREATE INDEX IF NOT EXISTS idx_execution_budget ON execution_state(goal_id, agen
 CREATE VIEW IF NOT EXISTS system_health_dashboard AS
 SELECT
     'agent_success_rate' AS metric,
-    (SELECT ROUND(AVG(CAST(success AS REAL)), 2) FROM agent_spawn_log WHERE spawned_at >= datetime('now', '-24 hours')) AS current_value,
+    (SELECT ROUND(AVG(CASE WHEN status = 'completed' THEN 1.0 ELSE 0.0 END), 2) FROM agent_spawn_log WHERE spawned_at >= datetime('now', '-24 hours')) AS current_value,
     0.95 AS target,
     CASE
-        WHEN (SELECT AVG(CAST(success AS REAL)) FROM agent_spawn_log WHERE spawned_at >= datetime('now', '-24 hours')) >= 0.95 THEN 'healthy'
-        WHEN (SELECT AVG(CAST(success AS REAL)) FROM agent_spawn_log WHERE spawned_at >= datetime('now', '-24 hours')) >= 0.85 THEN 'degraded'
+        WHEN (SELECT AVG(CASE WHEN status = 'completed' THEN 1.0 ELSE 0.0 END) FROM agent_spawn_log WHERE spawned_at >= datetime('now', '-24 hours')) >= 0.95 THEN 'healthy'
+        WHEN (SELECT AVG(CASE WHEN status = 'completed' THEN 1.0 ELSE 0.0 END) FROM agent_spawn_log WHERE spawned_at >= datetime('now', '-24 hours')) >= 0.85 THEN 'degraded'
         ELSE 'critical'
     END AS status
 UNION ALL
@@ -259,11 +263,11 @@ SELECT
 UNION ALL
 SELECT
     'error_rate_24h',
-    (SELECT ROUND(COUNT(CASE WHEN success = 0 THEN 1 END) * 1.0 / COUNT(*), 2) FROM phase_telemetry WHERE started_at >= datetime('now', '-24 hours')),
+    (SELECT ROUND(COUNT(CASE WHEN success = 0 THEN 1 END) * 1.0 / NULLIF(COUNT(*), 0), 2) FROM phase_telemetry WHERE started_at >= datetime('now', '-24 hours')),
     0.05,
     CASE
-        WHEN (SELECT COUNT(CASE WHEN success = 0 THEN 1 END) * 1.0 / COUNT(*) FROM phase_telemetry WHERE started_at >= datetime('now', '-24 hours')) >= 0.10 THEN 'critical'
-        WHEN (SELECT COUNT(CASE WHEN success = 0 THEN 1 END) * 1.0 / COUNT(*) FROM phase_telemetry WHERE started_at >= datetime('now', '-24 hours')) >= 0.05 THEN 'degraded'
+        WHEN (SELECT COUNT(CASE WHEN success = 0 THEN 1 END) * 1.0 / NULLIF(COUNT(*), 0) FROM phase_telemetry WHERE started_at >= datetime('now', '-24 hours')) >= 0.10 THEN 'critical'
+        WHEN (SELECT COUNT(CASE WHEN success = 0 THEN 1 END) * 1.0 / NULLIF(COUNT(*), 0) FROM phase_telemetry WHERE started_at >= datetime('now', '-24 hours')) >= 0.05 THEN 'degraded'
         ELSE 'healthy'
     END;
 

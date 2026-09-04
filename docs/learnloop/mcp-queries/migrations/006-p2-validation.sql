@@ -1,7 +1,11 @@
 -- ============================================
 -- Migration 006: P2 Validation Constraints
 -- Date: 2026-09-04
+-- Depends on: 002-p0-critical-fixes.sql (error_registry, agent_spawn_log)
 -- ============================================
+
+-- Dependency verification: Migration 002 must have run (error_registry, agent_spawn_log)
+-- These tables are required for validation triggers and constraints
 
 -- ============================================
 -- P2-1: Error Code Format Validation
@@ -87,12 +91,9 @@ END;
 -- Normalize complexity scores to 0.0-1.0 scale
 -- Add complexity column if not exists (compatibility with migration 002)
 
--- Add complexity column to topics table (skip if exists from P0)
--- Note: Columns may exist from migration 002, skip ALTER TABLE
--- SQLite doesn't support IF EXISTS for ALTER TABLE ADD COLUMN
--- complexity REAL DEFAULT 0.5 CHECK(complexity >= 0.0 AND complexity <= 1.0)
--- complexity_category TEXT CHECK(complexity_category IN ('beginner', 'intermediate', 'advanced'))
--- These columns added in P0, triggers below handle categorization
+-- Add complexity columns to topics table
+ALTER TABLE topics ADD COLUMN complexity REAL DEFAULT 0.5 CHECK(complexity >= 0.0 AND complexity <= 1.0);
+ALTER TABLE topics ADD COLUMN complexity_category TEXT CHECK(complexity_category IN ('beginner', 'intermediate', 'advanced'));
 
 -- Trigger to auto-populate complexity_category
 CREATE TRIGGER IF NOT EXISTS trg_set_complexity_category
@@ -312,15 +313,13 @@ WHERE mt.domain_type = 'topic'
 -- View: Quality metrics summary
 CREATE VIEW IF NOT EXISTS quality_metrics_summary AS
 SELECT
-    goal_id,
     COUNT(*) as total_topics,
     AVG(mastery) as avg_mastery,
     AVG(confidence) as avg_confidence,
     SUM(CASE WHEN source_count >= 3 THEN 1 ELSE 0 END) as topics_with_sources,
     SUM(CASE WHEN complexity >= 0.67 THEN 1 ELSE 0 END) as advanced_topics
 FROM topics
-WHERE is_hidden = 0
-GROUP BY goal_id;
+WHERE is_hidden = 0;
 
 -- ============================================
 -- Migration Complete

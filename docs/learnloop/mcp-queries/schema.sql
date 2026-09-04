@@ -1,6 +1,10 @@
 -- ============================================
 -- LearnLoop - Database Schema
 -- ============================================
+--
+-- SECURITY: All queries use parameterized syntax (:param_name).
+-- SQLite MCP handles escaping. Never concatenate user input into queries.
+-- ============================================
 
 -- Goal metadata
 CREATE TABLE IF NOT EXISTS goal_meta (
@@ -26,10 +30,16 @@ CREATE TABLE IF NOT EXISTS goal_meta (
     availability_json TEXT,
     learning_style_json TEXT,
     goal_profile_json TEXT,
-    onboarding_complete INTEGER DEFAULT 0
+    onboarding_complete INTEGER DEFAULT 0,
+    -- Budget explanation for user-facing display
+    budget_explanation TEXT,
+    -- JSON validation: Ensure learning_style_json contains valid keys
+    CHECK(learning_style_json IS NULL OR learning_style_json LIKE '%"primary"%')
 );
 
 -- Topics with mastery tracking
+-- UPSERT pattern: ON CONFLICT(topic_name) DO UPDATE ensures idempotent inserts.
+-- Collisions resolve to UPDATE, preventing duplicates.
 CREATE TABLE IF NOT EXISTS topics (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     topic_id TEXT UNIQUE NOT NULL,

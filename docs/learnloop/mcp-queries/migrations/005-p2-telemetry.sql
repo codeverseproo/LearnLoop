@@ -150,7 +150,7 @@ SELECT
     COUNT(*) AS row_count,
     COUNT(CASE WHEN status = 'mastered' THEN 1 END) AS mastered_count,
     COUNT(CASE WHEN is_hidden = 1 THEN 1 END) AS hidden_count,
-    COUNT(CASE WHEN goal_id IS NULL THEN 1 END) AS orphan_count
+    0 AS orphan_count  -- topics don't have goal_id FK
 FROM topics
 
 UNION ALL

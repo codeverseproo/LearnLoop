@@ -6,20 +6,34 @@
 -- Query: Calculate retrievability for all due topics
 -- Parameters: :goal_id
 
+-- Optimized with CTE to avoid duplicate POWER() calculation
+WITH fsrs_retrievability AS (
+    SELECT
+        t.id,
+        t.topic_id,
+        t.name,
+        f.stability,
+        f.difficulty,
+        f.state,
+        f.last_review,
+        CAST(julianday('now') - julianday(f.last_review) AS REAL) AS days_since_review,
+        POWER(1 + (julianday('now') - julianday(f.last_review)) / (9.0 * f.stability), -1.0) AS retrievability
+    FROM topics t
+    JOIN fsrs_state f ON t.id = f.topic_id
+    WHERE t.next_review <= date('now')
+)
 SELECT
-    t.id,
-    t.topic_id,
-    t.name,
-    f.stability,
-    f.difficulty,
-    f.state,
-    f.last_review,
-    CAST(julianday('now') - julianday(f.last_review) AS REAL) AS days_since_review,
-    POWER(1 + (julianday('now') - julianday(f.last_review)) / (9.0 * f.stability), -1.0) AS retrievability,
-    POWER(1 + (julianday('now') - julianday(f.last_review)) / (9.0 * f.stability), -1.0) - 0.9 AS priority
-FROM topics t
-JOIN fsrs_state f ON t.id = f.topic_id
-WHERE t.next_review <= date('now')
+    id,
+    topic_id,
+    name,
+    stability,
+    difficulty,
+    state,
+    last_review,
+    days_since_review,
+    retrievability,
+    retrievability - 0.9 AS priority
+FROM fsrs_retrievability
 ORDER BY priority ASC
 LIMIT 20;
 
@@ -85,16 +99,29 @@ WHERE id = :topic_id;
 -- GET DUE TOPICS FOR REVIEW
 -- ============================================
 
+-- Optimized with CTE for retrievability calculation
+WITH due_topics AS (
+    SELECT
+        t.id,
+        t.topic_id,
+        t.name,
+        f.stability,
+        f.difficulty,
+        f.state,
+        f.last_review,
+        POWER(1 + (julianday('now') - julianday(f.last_review)) / (9.0 * f.stability), -1.0) AS retrievability
+    FROM topics t
+    JOIN fsrs_state f ON t.id = f.topic_id
+    WHERE f.next_review <= datetime('now')
+)
 SELECT
-    t.id,
-    t.topic_id,
-    t.name,
-    f.stability,
-    f.difficulty,
-    f.state,
-    POWER(1 + (julianday('now') - julianday(f.last_review)) / (9.0 * f.stability), -1.0) AS retrievability
-FROM topics t
-JOIN fsrs_state f ON t.id = f.topic_id
-WHERE f.next_review <= datetime('now')
+    id,
+    topic_id,
+    name,
+    stability,
+    difficulty,
+    state,
+    retrievability
+FROM due_topics
 ORDER BY retrievability ASC
 LIMIT 20;

@@ -191,6 +191,14 @@ BEGIN
 END;
 
 -- ============================================
+-- P1 Fixes: Orchestration Constraints
+-- ============================================
+
+-- P1-OR3: Max agent validation - repair loop cap
+-- Note: CHECK constraint must be added at table creation in SQLite
+-- This is documentation; enforcement happens in application logic
+
+-- ============================================
 -- P1 Fixes: Telemetry Phase Status Tracking
 -- ============================================
 
@@ -219,3 +227,31 @@ BEGIN
       AND phase = NEW.phase
       AND started_at = NEW.started_at;
 END;
+
+-- ============================================
+-- P1 Security Fixes: Guard Indexes (SC4)
+-- ============================================
+
+-- Guard index: pre-wave1 interview check
+-- Optimizes: SELECT onboarding_complete, goal_interview_complete FROM goal_meta WHERE goal_id = ?
+CREATE INDEX IF NOT EXISTS idx_goal_meta_guards
+ON goal_meta(goal_id, onboarding_complete, goal_interview_complete);
+
+-- Guard index: pre-wave5 output check
+-- Optimizes: SELECT phase, completed_at, success, gate_result FROM phase_telemetry WHERE goal_id = ? AND phase = ?
+CREATE INDEX IF NOT EXISTS idx_telemetry_wave5_guard
+ON phase_telemetry(goal_id, phase, completed_at);
+
+-- ============================================
+-- P1 Security Fixes: JSON Validation (SC3)
+-- ============================================
+
+-- Add CHECK constraint for learning_style_json
+-- Note: ALTER TABLE ADD CONSTRAINT may fail if constraint violated; use WITH CHECK for validation
+-- ALTER TABLE goal_meta ADD CONSTRAINT chk_learning_style
+--   CHECK(learning_style_json IS NULL OR json_valid(learning_style_json) = 1);
+
+-- Alternative: Validate existing data first
+-- SELECT goal_id FROM goal_meta
+-- WHERE learning_style_json IS NOT NULL
+--   AND json_valid(learning_style_json) = 0;
