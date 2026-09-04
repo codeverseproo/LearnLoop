@@ -192,6 +192,32 @@ Create research-based learning plan with hidden topic detection.
 
 See §1.5 - Auto-initialize `~/.learnloop/goals/{goal_id}/memory.db`
 
+#### Step 2.5: Execute Pre-WAVE1 Guard (MANDATORY BLOCKING)
+
+**CRITICAL: This guard MUST pass before any agent spawns.**
+
+**Execute guard query:**
+```bash
+GUARD_RESULT=$(sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/pre-wave1-interview.sql)
+GUARD_STATUS=$(echo "$GUARD_RESULT" | awk -F'|' '{print $4}')
+```
+
+**Guard Handling:**
+
+| guard_status | Action |
+|--------------|--------|
+| `PASS` | Proceed to Step 3 |
+| `BLOCK: Stage 1-2 Interview Required` | STOP. Trigger `prompts/interviews/onboarding/availability.md` |
+| `BLOCK: Stage 3 Goal Interview Required` | STOP. Trigger `prompts/interviews/per-goal/baseline.md` |
+
+**Log guard check:**
+```sql
+INSERT INTO phase_telemetry (goal_id, phase, gate_result, error_message)
+VALUES (:goal_id, 'GUARD_G1', :guard_status, :message);
+```
+
+**CANNOT PROCEED WITHOUT PASS. No exceptions.**
+
 #### Step 3: Launch Discovery Agents (Calibrated by Goal)
 
 **CRITICAL: Agents MUST execute real WebSearch — no generic outputs from training data.**
@@ -404,6 +430,33 @@ Verify 7 criteria using SQL queries from `research.sql`:
 **If criteria fail:**
 - Critical: Re-research (max 2 rounds)
 - Warnings: Proceed with flags
+
+#### Step 7.5: Execute Pre-WAVE5 Guard (MANDATORY BLOCKING)
+
+**CRITICAL: This guard MUST pass before syllabus generation.**
+
+**Execute guard query:**
+```bash
+GUARD_RESULT=$(sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/pre-wave5-output.sql)
+GUARD_STATUS=$(echo "$GUARD_RESULT" | awk -F'|' '{print $4}')
+```
+
+**Guard Handling:**
+
+| guard_status | Action |
+|--------------|--------|
+| `PASS` | Proceed to Step 8 |
+| `PASS: Force approved (max cycles)` | Proceed to Step 8 with warning banner |
+| `BLOCK: No critic verdict found` | STOP. Route to WAVE3 → spawn critic |
+| `BLOCK: Repair loop incomplete` | STOP. Route to WAVE4 → repair loop |
+
+**Log guard check:**
+```sql
+INSERT INTO phase_telemetry (goal_id, phase, gate_result, error_message)
+VALUES (:goal_id, 'GUARD_G4', :guard_status, :message);
+```
+
+**CANNOT GENERATE OUTPUT WITHOUT PASS. No exceptions.**
 
 #### Step 8: Generate Syllabus
 
@@ -804,67 +857,105 @@ sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gate
 ## State Machine: Execution Flow
 
 ```
-ONBOARDING (check onboarding_complete)
+ONBOARDING ──[GUARD G1: interview?]──> BLOCKED
+    │                                        │
+    │                                        └── Trigger Interview Stage 1-3
     │
-    ├── incomplete → INTERVIEW Stage 1-3 (BLOCKING)
-    │
-    └── complete → WAVE1_RUNNING
-                      │
-                      ├── Spawn 4 discovery agents (parallel)
-                      │
-WAVE1_RUNNING ──→ WAVE1_GATE
-                      │
-                      ├── FAIL → retry (max 2) → WAVE1_RUNNING
-                      │
-                      └── PASS → WAVE2_RUNNING
-                                    │
-                                    ├── Identify complex topics (SQL)
-                                    ├── Spawn 0-10 deep-dive agents
-                                    │
-WAVE2_RUNNING ──→ WAVE2_GATE
-                      │
-                      ├── FAIL → retry → WAVE2_RUNNING
-                      │
-                      └── PASS → WAVE3_RUNNING
-                                    │
-                                    ├── Spawn critic agent
-                                    ├── Wait for verdict
-                                    │
-WAVE3_RUNNING ──→ WAVE3_GATE
-                      │
-                      ├── RETRY → WAVE4_REPAIR
-                      │
-                      ├── FORCE_APPROVE → WAVE5_OUTPUT
-                      │
-                      └── PASS → WAVE5_OUTPUT
-                                    │
-WAVE4_REPAIR (loop, max 5 cycles)
-    │
+    └──[PASS G1]──> WAVE1_RUNNING
+                        │
+                        ├── Spawn 4 discovery agents (parallel)
+                        │
+WAVE1_RUNNING ──[GUARD G2: wave1_gate?]──> WAVE2_RUNNING
+                        │                          │
+                        │                          ├── Identify complex topics (SQL)
+                        │                          ├── Spawn 0-10 deep-dive agents
+                        │                          │
+                        │                     WAVE2_RUNNING ──[GUARD G3: wave2_gate?]──> WAVE3_RUNNING
+                        │                                                          │
+                        │                                                          ├── Spawn critic agent
+                        │                                                          ├── Wait for verdict
+                        │                                                          │
+                        │                                                     WAVE3_RUNNING ──[GUARD G4: critic?]──> BLOCKED
+                        │                                                          │                           │
+                        │                                                          │                           └── Route to WAVE4_REPAIR
+                        │                                                          │
+                        │                                                          └──[PASS G4]──> WAVE5_OUTPUT
+                        │                                                                             │
+WAVE4_REPAIR (loop, max 5 cycles)                                             │
+    │                                                                          └── Generate Syllabus ──> COMPLETE
     ├── repair_cycles < 5 → re-spawn critic → WAVE3_RUNNING
     │
     └── repair_cycles >= 5 → WAVE5_OUTPUT (forced)
-                                │
-WAVE5_OUTPUT ──→ COMPLETE
 ```
 
-**State Transitions:**
+**State Transitions with Guards:**
 
-| Current State | Next State | Condition |
-|---------------|------------|-----------|
-| ONBOARDING | INTERVIEW | onboarding_complete = 0 |
-| ONBOARDING | WAVE1_RUNNING | onboarding_complete = 1 |
-| INTERVIEW | WAVE1_RUNNING | interview_complete = 1 |
-| WAVE1_RUNNING | WAVE1_GATE | All 4 agents complete |
-| WAVE1_GATE | WAVE2_RUNNING | gate_status = 'PASS' |
-| WAVE1_GATE | WAVE1_RUNNING | gate_status = 'FAIL' (retry) |
-| WAVE2_RUNNING | WAVE2_GATE | Deep-dives complete (or none spawned) |
-| WAVE2_GATE | WAVE3_RUNNING | gate_status = 'PASS' |
-| WAVE3_RUNNING | WAVE3_GATE | Critic verdict received |
-| WAVE3_GATE | WAVE4_REPAIR | gate_status = 'RETRY' |
-| WAVE3_GATE | WAVE5_OUTPUT | gate_status IN ('PASS', 'FORCE_APPROVE') |
-| WAVE4_REPAIR | WAVE3_RUNNING | repair_cycles < 5 |
-| WAVE4_REPAIR | WAVE5_OUTPUT | repair_cycles >= 5 (forced) |
-| WAVE5_OUTPUT | COMPLETE | Syllabus generated |
+| Current State | Guard | Next State | Condition |
+|---------------|-------|------------|-----------|
+| ONBOARDING | G1 | BLOCKED | `onboarding_complete = 0` |
+| ONBOARDING | G1 | WAVE1_RUNNING | `onboarding_complete = 1` |
+| WAVE1_RUNNING | G2 | WAVE1_RUNNING | `gate_status = 'FAIL'` (retry) |
+| WAVE1_RUNNING | G2 | WAVE2_RUNNING | `gate_status = 'PASS'` |
+| WAVE2_RUNNING | G3 | WAVE2_RUNNING | `gate_status = 'FAIL'` (retry) |
+| WAVE2_RUNNING | G3 | WAVE3_RUNNING | `gate_status = 'PASS'` |
+| WAVE3_RUNNING | G4 | BLOCKED | `verdict = 'REJECT' AND repair_cycles < 5` |
+| WAVE3_RUNNING | G4 | WAVE5_OUTPUT | `verdict IN ('APPROVED', 'APPROVED_WITH_WARNINGS')` |
+| WAVE3_RUNNING | G4 | WAVE5_OUTPUT | `verdict = 'REJECT' AND repair_cycles >= 5` (forced) |
+| WAVE4_REPAIR | - | WAVE3_RUNNING | `repair_cycles < 5` |
+| WAVE4_REPAIR | - | WAVE5_OUTPUT | `repair_cycles >= 5` (forced) |
+| WAVE5_OUTPUT | - | COMPLETE | Syllabus generated |
+
+---
+
+## Guard Reference: Mandatory Checkpoints
+
+### Guard Execution Order
+
+| Order | Guard | SQL Query | Blocking Condition |
+|-------|-------|-----------|-------------------|
+| G1 | Pre-WAVE1 | `gates/pre-wave1-interview.sql` | `onboarding_complete = 0` OR `goal_interview_complete = 0` |
+| G2 | Pre-WAVE2 | `gates/wave1-discovery.sql` | Discovery agents incomplete |
+| G3 | Pre-WAVE3 | `gates/wave2-deep-dive.sql` | Deep-dives incomplete (if spawned) |
+| G4 | Pre-WAVE5 | `gates/pre-wave5-output.sql` | No critic verdict OR verdict = 'REJECT' with repair_cycles < 5 |
+
+### Guard Enforcement Pattern
+
+**Every wave transition MUST execute guards:**
+
+1. **Before WAVE1:**
+   ```bash
+   sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/pre-wave1-interview.sql
+   ```
+   - IF `guard_status LIKE 'BLOCK:%'` → STOP, RETURN message, trigger interview
+   - IF `guard_status = 'PASS'` → Proceed to spawn discovery agents
+
+2. **Before WAVE3 (after WAVE2 gate passes):**
+   - Verify `wave2_gate_status = 'PASS'` from previous gate
+   - Spawn critic agent
+
+3. **Before WAVE5:**
+   ```bash
+   sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/pre-wave5-output.sql
+   ```
+   - IF `guard_status LIKE 'BLOCK:%'` → STOP, route to WAVE4 repair
+   - IF `guard_status = 'PASS'` → Generate syllabus output
+
+4. **Log every guard check:**
+   ```sql
+   INSERT INTO phase_telemetry (goal_id, phase, gate_result, error_message)
+   VALUES (:goal_id, 'GUARD_CHECK', :guard_status, :message);
+   ```
+
+### Guard Failures: User Actions
+
+| Guard | Failure Action | User Prompt |
+|-------|---------------|-------------|
+| G1 (Interview) | Trigger interview flow | "Interview required. Starting Stage 1?" |
+| G2 (Wave1) | Retry failed agents | "Discovery incomplete. Retry with 4 agents?" |
+| G3 (Wave2) | Retry deep-dives | "Deep-dive incomplete. Retry?" |
+| G4 (Critic) | Route to repair | "Critic rejected. Starting repair cycle {n}/5?" |
+
+**CRITICAL: Guards are BLOCKING. Cannot skip or bypass.**
 
 ---
 
