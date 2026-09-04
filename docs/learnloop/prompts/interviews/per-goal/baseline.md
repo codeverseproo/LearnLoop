@@ -43,3 +43,43 @@ Category complete when:
 - Baseline level selected (A-E)
 - At least one topic identified (either confidence or priority)
 - Timestamp recorded
+
+---
+
+## Budget Configuration
+
+**Question to user:**
+
+"How many agents can this goal use for deep research?"
+
+**Options:**
+1. **Conservative (10 agents)** — Standard research, fast execution
+2. **Balanced (20 agents)** — Recommended for comprehensive goals
+3. **Aggressive (50 agents)** — Deep research, complex topics
+4. **Unlimited** — No constraints, use as many as needed
+
+**Store in goal_meta:**
+```sql
+UPDATE goal_meta
+SET agent_budget = :budget_value,
+    budget_enforcement = 'warning'
+WHERE goal_id = :goal_id;
+```
+
+**Values:**
+- Conservative: `agent_budget = 10`
+- Balanced: `agent_budget = 20`
+- Aggressive: `agent_budget = 50`
+- Unlimited: `agent_budget = -1`
+
+## Output Format After Interview
+
+```json
+{
+  "baseline_knowledge": "beginner|intermediate|advanced",
+  "timeline_weeks": 12,
+  "intensity": "relaxed|standard|intensive",
+  "agent_budget": 20,
+  "budget_enforcement": "warning"
+}
+```
