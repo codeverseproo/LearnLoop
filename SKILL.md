@@ -1172,6 +1172,92 @@ cp ~/.learnloop/backups/{backup_file}.db ~/.learnloop/goals/{goal_id}/memory.db
 
 ---
 
+## Error Recovery: User Choice Protocol
+
+When errors occur during agent execution:
+
+### Error Detection Flow
+
+```
+ERROR DETECTED
+    │
+    ├── WebSearch failed?
+    │   ├── Try alternate source (different agent type)
+    │   │   ├── Success → Continue
+    │   │   └── Fail → Ask user
+    │   │
+    │   └── Ask user with 4 options
+```
+
+### User Choice Dialog
+
+**AskUserQuestion format:**
+
+```json
+{
+  "question": "WebSearch failed for topic '{topic_name}'. How would you like to proceed?",
+  "header": "Error Recovery",
+  "options": [
+    {
+      "label": "Retry All Sources",
+      "description": "Try all search methods again with different queries"
+    },
+    {
+      "label": "Test Connection",
+      "description": "Diagnose network issues before retrying"
+    },
+    {
+      "label": "Proceed Without This Topic",
+      "description": "Continue, mark topic as incomplete with confidence 0.2"
+    },
+    {
+      "label": "Cancel Goal",
+      "description": "Stop execution and preserve progress"
+    }
+  ]
+}
+```
+
+### Proceed Without Data Handling
+
+When user chooses "Proceed Without":
+
+```sql
+UPDATE topics
+SET confidence = 0.2,
+    incomplete_flag = 1,
+    incomplete_reason = 'WebSearch failed - user approved',
+    status = 'pending'
+WHERE topic_id = :topic_id;
+
+INSERT INTO phase_telemetry (goal_id, phase, error_code, error_message)
+VALUES (:goal_id, 'REPAIR', 'E506', 'User approved proceed without data');
+```
+
+### Error Codes for Recovery
+
+| Code | Scenario | User Options |
+|------|----------|--------------|
+| E501 | WebSearch timeout | Retry/Test/Proceed/Cancel |
+| E502 | Insufficient sources | Retry/Proceed/Cancel |
+| E504 | Agent spawn failed | Retry/Cancel |
+| E505 | Gate check failed | Retry/Skip/Cancel |
+| E506 | Max repair cycles | Accept Warnings/Cancel |
+
+### Telemetry Logging
+
+Log all errors to phase_telemetry:
+
+```sql
+INSERT INTO phase_telemetry (goal_id, phase, phase_status, error_code, error_message)
+VALUES (:goal_id, :phase, 'FAIL', :error_code, :error_message)
+ON CONFLICT DO UPDATE SET
+    error_code = :error_code,
+    error_message = :error_message;
+```
+
+---
+
 ## 8. References
 
 | File | Contents |
