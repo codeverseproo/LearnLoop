@@ -116,12 +116,15 @@ The skill shows:
 | **Research-Based Syllabus** | 4 parallel agents (official/academic/practical/expert) | Comprehensive coverage from credible sources |
 | **Hidden Topic Detection** | 3 methods: complexity, error patterns, expert practice | No blind spots in your learning plan |
 | **Knowledge Graph** | Prerequisite + related + cross-domain links | Connected learning |
-| **Critic Quality Loop** | 9 checks, max 3 rounds, satisfaction criteria | Verified syllabus quality |
+| **Critic Quality Loop** | 7 checks, max 5 repair cycles, mandatory blocking | Verified syllabus quality |
 | **3-Stage Interview System** | Onboarding → Per-Goal → Per-Note | Personalized content generation |
 | **FSRS-6 Scheduler** | Free Spaced Repetition Scheduler algorithm | 20-30% fewer reviews |
 | **Pure SQLite MCP** | Zero Python dependency | Simpler architecture |
 | **Streak System** | Loss aversion mechanic with streak freeze | 3.6x higher engagement |
 | **Multi-Goal Isolation** | Separate SQLite database per goal | Organized progress |
+| **Budget Enforcement** | User-defined agent limits (10/20/50/unlimited) | Cost control with advisory or hard_limit modes |
+| **Telemetry Layer** | Phase duration tracking, gate results | Observability and debugging |
+| **Mandatory Guards** | 4 blocking checkpoints before key transitions | Prevents skipping critical stages |
 
 ---
 
@@ -224,6 +227,78 @@ Interview data stored in SQLite `goal_meta` table:
 ---
 
 ## Architecture
+
+### Orchestrator State Machine (v2.0)
+
+LearnLoop enforces a strict state machine with mandatory blocking guards:
+
+```
+ONBOARDING ──[GUARD G1: interview?]──> BLOCKED
+    │                                        │
+    │                                        └── Trigger Interview Stage 1-3
+    │
+    └──[PASS G1]──> WAVE1_RUNNING
+                        │
+                        ├── Spawn 4 discovery agents (parallel)
+                        │
+WAVE1_RUNNING ──[GUARD G2: wave1_gate?]──> WAVE2_RUNNING
+                        │                          │
+                        │                          ├── Identify complex topics (SQL)
+                        │                          ├── Spawn 0-10 deep-dive agents
+                        │                          │
+                        │                     WAVE2_RUNNING ──[GUARD G3: wave2_gate?]──> WAVE3_RUNNING
+                        │                                                          │
+                        │                                                          ├── Spawn critic agent
+                        │                                                          ├── Wait for verdict
+                        │                                                          │
+                        │                                                     WAVE3_RUNNING ──[GUARD G4: critic?]──> BLOCKED
+                        │                                                          │                           │
+                        │                                                          │                           └── Route to WAVE4_REPAIR
+                        │                                                          │
+                        │                                                          └──[PASS G4]──> WAVE5_OUTPUT
+                        │                                                                             │
+WAVE4_REPAIR (loop, max 5 cycles)                                             │
+    │                                                                          └── Generate Syllabus ──> COMPLETE
+    ├── repair_cycles < 5 → re-spawn critic → WAVE3_RUNNING
+    │
+    └── repair_cycles >= 5 → WAVE5_OUTPUT (forced)
+```
+
+**Key Guards:**
+
+| Guard | SQL Query | Blocking Condition |
+|-------|-----------|-------------------|
+| G1 (Pre-WAVE1) | `gates/pre-wave1-interview.sql` | `onboarding_complete = 0` OR `goal_interview_complete = 0` |
+| G2 (Post-WAVE1) | `gates/wave1-discovery.sql` | Discovery agents incomplete |
+| G3 (Post-WAVE2) | `gates/wave2-deep-dive.sql` | Deep-dives incomplete |
+| G4 (Pre-WAVE5) | `gates/pre-wave5-output.sql` | No critic verdict OR `REJECT` with `repair_cycles < 5` |
+
+**Telemetry Tracking:**
+
+Every wave transition logs to `phase_telemetry` table:
+
+```sql
+-- On wave start
+INSERT INTO phase_telemetry (goal_id, phase, wave, started_at)
+VALUES (:goal_id, 'WAVE1', 1, CURRENT_TIMESTAMP);
+
+-- On wave completion
+UPDATE phase_telemetry
+SET completed_at = CURRENT_TIMESTAMP,
+    duration_seconds = (julianday(CURRENT_TIMESTAMP) - julianday(started_at)) * 86400,
+    gate_result = 'PASS',
+    success = 1
+WHERE goal_id = :goal_id AND phase = 'WAVE1' AND completed_at IS NULL;
+```
+
+**Budget Enforcement:**
+
+| Budget Mode | Behavior |
+|-------------|----------|
+| `advisory` (default) | Warnings at 50%/75%/100% thresholds |
+| `hard_limit` | Blocks agent spawns when budget exhausted |
+
+Budget values: `10` (Conservative), `20` (Balanced), `50` (Aggressive), `-1` (Unlimited)
 
 ### Three-Tier Memory System
 
@@ -451,6 +526,7 @@ All errors use codes E001-E699. See SKILL.md for details.
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 2.0.0 | 2026-09-04 | Orchestrator state machine with mandatory blocking guards, telemetry tracking, budget enforcement, critic repair loop (max 5 cycles) |
 | 1.2.0 | 2026-09-04 | 3-stage interview system: onboarding, per-goal, per-note with JSON storage |
 | 1.1.0 | 2026-09-03 | Research-based syllabus: 4 parallel agents, hidden topics, knowledge graph, critic loop |
 | 1.0.0 | 2026-09-03 | Pure SQLite MCP architecture, zero Python dependency |
