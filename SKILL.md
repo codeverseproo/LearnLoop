@@ -460,6 +460,12 @@ VALUES (:goal_id, 'GUARD_G4', :guard_status, :message);
 
 #### Step 8: Generate Syllabus
 
+**Log phase start:**
+```sql
+INSERT INTO phase_telemetry (goal_id, phase, wave, started_at)
+VALUES (:goal_id, 'WAVE5_OUTPUT', 5, CURRENT_TIMESTAMP);
+```
+
 **Create `00-Dashboard/Syllabus.md` in Obsidian vault:**
 
 Structure:
@@ -508,6 +514,16 @@ Structure:
 
 ## Warnings
 {Any criteria warnings}
+```
+
+**Log phase complete after syllabus generation:**
+```sql
+UPDATE phase_telemetry
+SET completed_at = CURRENT_TIMESTAMP,
+    duration_seconds = (julianday(CURRENT_TIMESTAMP) - julianday(started_at)) * 86400,
+    gate_result = 'PASS',
+    success = 1
+WHERE goal_id = :goal_id AND phase = 'WAVE5_OUTPUT' AND completed_at IS NULL;
 ```
 
 #### Step 9: Store in SQLite
@@ -711,17 +727,33 @@ Use for:
 
 **Execute:**
 
-1. Inject current date into agent prompts
-2. Spawn all 4 discovery agents in single message:
+1. **Log phase start:**
+   ```sql
+   INSERT INTO phase_telemetry (goal_id, phase, wave, started_at)
+   VALUES (:goal_id, 'WAVE1', 1, CURRENT_TIMESTAMP);
+   ```
+
+2. Inject current date into agent prompts
+3. Spawn all 4 discovery agents in single message:
    ```
    Agent(subagent_type="learnloop:discovery-official", name="official-researcher", ...)
    Agent(subagent_type="learnloop:discovery-academic", name="academic-researcher", ...)
    Agent(subagent_type="learnloop:discovery-practical", name="practical-researcher", ...)
    Agent(subagent_type="learnloop:discovery-expert", name="expert-researcher", ...)
    ```
-3. Wait for all 4 to complete (barrier)
-4. Run gate: `wave1-discovery.sql`
-5. If FAIL: retry missing agents (max 2 retries)
+
+4. Wait for all 4 to complete (barrier)
+5. Run gate: `wave1-discovery.sql`
+6. If FAIL: retry missing agents (max 2 retries)
+7. **Log phase complete:**
+   ```sql
+   UPDATE phase_telemetry
+   SET completed_at = CURRENT_TIMESTAMP,
+       duration_seconds = (julianday(CURRENT_TIMESTAMP) - julianday(started_at)) * 86400,
+       gate_result = 'PASS',
+       success = 1
+   WHERE goal_id = :goal_id AND phase = 'WAVE1' AND completed_at IS NULL;
+   ```
 
 **Gate Check:**
 ```sql
@@ -734,19 +766,34 @@ sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gate
 
 **Execute:**
 
-1. Merge Wave 1 results
-2. Identify complex topics:
+1. **Log phase start:**
+   ```sql
+   INSERT INTO phase_telemetry (goal_id, phase, wave, started_at)
+   VALUES (:goal_id, 'WAVE2', 2, CURRENT_TIMESTAMP);
+   ```
+
+2. Merge Wave 1 results
+3. Identify complex topics:
    ```sql
    SELECT topic_id, name, complexity
    FROM topics
    WHERE complexity >= 7 OR source_count < 3;
    ```
-3. Spawn deep-dive agents in batches of 4:
+4. Spawn deep-dive agents in batches of 4:
    - Batch 1: topics[0:4]
    - Batch 2: topics[4:8] (if needed)
    - Batch 3: topics[8:10] (max 10)
-4. Wait for each batch to complete before next
-5. Run gate: `wave2-deep-dive.sql`
+5. Wait for each batch to complete before next
+6. Run gate: `wave2-deep-dive.sql`
+7. **Log phase complete:**
+   ```sql
+   UPDATE phase_telemetry
+   SET completed_at = CURRENT_TIMESTAMP,
+       duration_seconds = (julianday(CURRENT_TIMESTAMP) - julianday(started_at)) * 86400,
+       gate_result = 'PASS',
+       success = 1
+   WHERE goal_id = :goal_id AND phase = 'WAVE2' AND completed_at IS NULL;
+   ```
 
 ---
 
@@ -754,23 +801,38 @@ sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gate
 
 **Execute:**
 
-1. Merge Wave 1 + Wave 2 results into JSON
-2. Spawn critic agent with current date:
+1. **Log phase start:**
+   ```sql
+   INSERT INTO phase_telemetry (goal_id, phase, wave, started_at)
+   VALUES (:goal_id, 'WAVE3', 3, CURRENT_TIMESTAMP);
+   ```
+
+2. Merge Wave 1 + Wave 2 results into JSON
+3. Spawn critic agent with current date:
    ```markdown
    Current Date: {current_date}
    Agent: learnloop:critic
    Input: merged_research.json
    ```
-3. Wait for verdict (timeout: 120s)
-4. Store verdict in `critic_verdict` table:
+4. Wait for verdict (timeout: 120s)
+5. Store verdict in `critic_verdict` table:
    ```sql
    INSERT INTO critic_verdict (goal_id, verdict, confidence, warnings_count, challenges, repair_cycle)
    VALUES (:goal_id, :verdict, :confidence, :warnings_count, :challenges, 0);
    ```
-5. Run gate: `wave3-critic.sql`
-6. If gate_status = 'RETRY' → Wave 4 (Repair)
-7. If gate_status = 'PASS' → Wave 5 (Output)
-8. If gate_status = 'FORCE_APPROVE' → Wave 5 with warnings
+6. Run gate: `wave3-critic.sql`
+7. If gate_status = 'RETRY' → Wave 4 (Repair)
+8. If gate_status = 'PASS' → Wave 5 (Output)
+9. If gate_status = 'FORCE_APPROVE' → Wave 5 with warnings
+10. **Log phase complete:**
+    ```sql
+    UPDATE phase_telemetry
+    SET completed_at = CURRENT_TIMESTAMP,
+        duration_seconds = (julianday(CURRENT_TIMESTAMP) - julianday(started_at)) * 86400,
+        gate_result = :gate_status,
+        success = CASE WHEN :gate_status IN ('PASS', 'FORCE_APPROVE') THEN 1 ELSE 0 END
+    WHERE goal_id = :goal_id AND phase = 'WAVE3' AND completed_at IS NULL;
+    ```
 
 ### Wave 4: Repair Loop (Max 5 Cycles)
 
@@ -779,12 +841,16 @@ sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gate
 ```
 repair_cycles = SELECT repair_cycles FROM execution_state WHERE goal_id = :goal_id
 
+-- Log repair loop start
+INSERT INTO phase_telemetry (goal_id, phase, wave, started_at)
+VALUES (:goal_id, 'WAVE4_REPAIR', 4, CURRENT_TIMESTAMP);
+
 WHILE critic_verdict = 'REJECT' AND repair_cycles < 5:
 
   1. Check budget remaining:
      user_budget = SELECT agent_budget FROM goal_meta WHERE goal_id = :goal_id
      agents_spawned = SELECT SUM(agent_spawns) FROM execution_state WHERE goal_id = :goal_id
-     
+
      IF user_budget != -1 AND agents_spawned >= user_budget AND budget_enforcement = 'hard_limit':
        FORCE APPROVED_WITH_WARNINGS
        EXIT LOOP
@@ -793,7 +859,7 @@ WHILE critic_verdict = 'REJECT' AND repair_cycles < 5:
   3. Spawn repair agents (max 5 parallel):
      ```
      for challenge in challenges[:5]:
-       Agent(subagent_type="learnloop:repair", 
+       Agent(subagent_type="learnloop:repair",
              name="repair-{topic}",
              prompt="Current Date: {current_date}\nCycle: {repair_cycles + 1}/5\nChallenge: {challenge}")
      ```
@@ -801,8 +867,8 @@ WHILE critic_verdict = 'REJECT' AND repair_cycles < 5:
   5. Update topics in database
   6. Increment repair_cycles:
      ```sql
-     UPDATE execution_state 
-     SET repair_cycles = repair_cycles + 1 
+     UPDATE execution_state
+     SET repair_cycles = repair_cycles + 1
      WHERE goal_id = :goal_id;
      ```
   7. Re-run critic (Wave 3)
@@ -812,6 +878,14 @@ IF repair_cycles >= 5:
   Force APPROVED_WITH_WARNINGS
   Log unresolved challenges
   Proceed to Wave 5 (Output)
+
+-- Log repair loop complete
+UPDATE phase_telemetry
+SET completed_at = CURRENT_TIMESTAMP,
+    duration_seconds = (julianday(CURRENT_TIMESTAMP) - julianday(started_at)) * 86400,
+    gate_result = CASE WHEN repair_cycles >= 5 THEN 'FORCE_APPROVE' ELSE 'PASS' END,
+    success = 1
+WHERE goal_id = :goal_id AND phase = 'WAVE4_REPAIR' AND completed_at IS NULL;
 ```
 
 **Exit Conditions:**
