@@ -898,18 +898,53 @@ WHERE goal_id = :goal_id AND phase = 'WAVE4_REPAIR' AND completed_at IS NULL;
 
 ### Budget Tracking (Advisory, Not Blocking)
 
-After each wave, emit budget status:
+**After each wave, emit budget status:**
 
-```sql
-sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/budget-check.sql
+```bash
+BUDGET_RESULT=$(sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/budget-check.sql)
+BUDGET_STATUS=$(echo "$BUDGET_RESULT" | awk -F'|' '{print $5}')
+BUDGET_MESSAGE=$(echo "$BUDGET_RESULT" | awk -F'|' '{print $6}')
 ```
 
-**Warnings:**
-- 10+ agents: ℹ️ High agent usage
-- 15+ agents: ⚠️ 75% budget used
-- 20+ agents: ⚠️ Budget exhausted
+**Budget Status Values:**
+- `UNLIMITED`: No budget constraint (agent_budget = -1)
+- `OK`: Within budget (<50% used)
+- `WARN_50PCT`: 50% threshold reached
+- `WARN_75PCT`: 75% threshold reached
+- `EXHAUSTED`: Budget exhausted (hard_limit may block)
 
-**IMPORTANT:** Budget warnings do NOT stop execution. Advisory only.
+**Emit warnings to user:**
+```markdown
+📊 Budget Status: {budget_message}
+```
+
+**Hard Limit Enforcement:**
+When `budget_enforcement = 'hard_limit'` AND `budget_status = 'EXHAUSTED'`:
+- Block further agent spawns
+- Force APPROVED_WITH_WARNINGS
+- Proceed to output generation
+
+**Implementation in Wave Execution:**
+
+Each wave checks budget BEFORE spawning agents:
+
+```bash
+# Pre-spawn budget check
+BUDGET_RESULT=$(sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/budget-check.sql)
+BUDGET_STATUS=$(echo "$BUDGET_RESULT" | awk -F'|' '{print $5}')
+ENFORCEMENT=$(echo "$BUDGET_RESULT" | awk -F'|' '{print $3}')
+
+IF BUDGET_STATUS = 'EXHAUSTED' AND ENFORCEMENT = 'hard_limit':
+  echo "⚠️ Budget exhausted. Cannot spawn more agents."
+  echo "Force approving with warnings."
+  # Route to Wave 5
+ELSE:
+  # Proceed with agent spawn
+  echo "📊 {BUDGET_MESSAGE}"
+fi
+```
+
+**IMPORTANT:** Budget warnings do NOT stop execution unless `budget_enforcement = 'hard_limit'`. User can choose advisory (default) or hard_limit mode during interview.
 
 ---
 
