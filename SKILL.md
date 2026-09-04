@@ -170,29 +170,71 @@ Create research-based learning plan with hidden topic detection.
 
 See §1.5 - Auto-initialize `~/.learnloop/goals/{goal_id}/memory.db`
 
-#### Step 3: Launch Discovery Agents (Parallel)
+#### Step 3: Launch Discovery Agents (Calibrated by Goal)
 
 **CRITICAL: Agents MUST execute real WebSearch — no generic outputs from training data.**
 
-Spawn 4 agents simultaneously using `Agent` tool:
+**Calibration factors from interview data:**
+- goal_type: affects priority of source types
+- timeline_weeks + intensity: affects search depth
+- baseline_knowledge: affects complexity starting point
+- hours_per_day: affects topic granularity
 
-| Agent | Prompt File | Source Focus | Min Searches |
-|-------|-------------|--------------|--------------|
-| Agent 1 | `prompts/discovery-agent-official.md` | Curriculum, vendor docs | 3 searches |
-| Agent 2 | `prompts/discovery-agent-academic.md` | Papers, textbooks | 3 searches |
-| Agent 3 | `prompts/discovery-agent-practical.md` | Tutorials, blogs, forums | 3 searches |
-| Agent 4 | `prompts/discovery-agent-expert.md` | Production, case studies | 3 searches |
+| Goal Type | Primary Agents | Min Searches | Focus |
+|-----------|----------------|--------------|-------|
+| exam | official, practical | 4 each | Exam blueprints, practice tests |
+| skill | practical, expert | 3 each | Tutorials, case studies |
+| degree | academic, official | 5 each | Theory, curriculum |
+| topic | all 4 | 2 each | Broad coverage |
+
+**Timeline-based adjustment:**
+- timeline_weeks ≤ 4: 2 searches per agent (accelerated)
+- timeline_weeks 5-12: 3 searches per agent (standard)
+- timeline_weeks > 12: 4 searches per agent (comprehensive)
+
+**Intensity adjustment:**
+- intensity = "intensive": +1 search per agent
+- intensity = "relaxed": standard searches
+
+**Baseline knowledge adjustment:**
+- baseline_knowledge = "advanced": skip foundational topics, focus on hidden/gaps
+- baseline_knowledge = "beginner": add prerequisite searches
+
+**Agent spawning with interview params:**
+```json
+{
+  "goal_type": "exam",
+  "timeline_weeks": 12,
+  "intensity": "standard",
+  "baseline_knowledge": "intermediate",
+  "min_searches": 3,
+  "calibrated_by": [
+    {"agent": "official", "priority": 1, "searches": 4},
+    {"agent": "practical", "priority": 2, "searches": 4},
+    {"agent": "academic", "priority": 3, "searches": 3},
+    {"agent": "expert", "priority": 4, "searches": 3}
+  ]
+}
+```
+
+Spawn 4 agents simultaneously using `Agent` tool:
 
 **Agent Execution Requirements:**
 
-1. **MUST use WebSearch tool** — each agent runs 3+ distinct queries
+1. **MUST use WebSearch tool** — each agent runs calibrated minimum queries (see table above)
 2. **MUST cite real URLs** — no fabricated sources
 3. **MUST save research artifacts** to `~/.learnloop/research/{goal_id}/`:
    - `{agent_type}-raw-results.json` — full search outputs
    - `{agent_type}-sources.md` — curated source list with URLs
    - `{agent_type}-analysis.md` — hidden topic detection reasoning
 
-4. **If WebSearch unavailable or fails:**
+4. **MUST record metadata** to `research_metadata` table:
+   ```sql
+   INSERT INTO research_metadata (goal_id, agent_type, search_iterations, research_dir, artifacts_saved)
+   VALUES (:goal_id, :agent_type, :search_iterations, :research_dir, 3);
+   ```
+
+5. **If WebSearch unavailable or fails:**
    - Agent returns: `{"search_failed": true, "reason": "..."}`
    - Confidence marked as 0.2
    - Skill prompts user: "Web search unavailable. Syllabus will be less comprehensive. Continue?"
@@ -204,18 +246,38 @@ Spawn 4 agents simultaneously using `Agent` tool:
 - related_topics{}
 - cross_domain{}
 - confidence score (based on actual search results)
-- search_iterations: number (must be ≥3 for valid research)
+- search_iterations: number (must be ≥ calibrated minimum for valid research)
 
 #### Step 4: Merge Results
 
 **Merge logic:**
-1. Union all topics (dedupe by name similarity)
-2. Calculate confidence per topic: avg(agent confidence) × source_count_factor
-3. Cross-validate: topics in ≥3 sources = high confidence
-4. Topics in 1-2 sources = needs verification (flag)
-5. Aggregate hidden topics with detection method
-6. Union all prerequisite links
-7. Union all related and cross-domain links
+
+1. **Union all topics** (dedupe by fuzzy match, threshold 0.85 similarity)
+
+2. **Conflict Resolution:**
+   - If agents disagree on topic existence: require ≥2 agents to include
+   - If agents disagree on complexity: use weighted average by confidence
+   - If agents disagree on prerequisites: union all + flag for user review
+
+3. **Confidence Weighting:**
+   ```
+   confidence = avg(agent.confidence) × min(1.0, source_count / 3)
+   ```
+   - **High confidence:** topic in ≥3 source types (official/academic/practical/expert)
+   - **Medium confidence:** topic in 2 source types
+   - **Low confidence:** topic in 1 source type (flag for verification)
+
+4. **Triangulation:**
+   - For each claim about a topic: require ≥3 independent sources
+   - Sources from same domain count as 1
+   - Store triangulation score in `topics.confidence`
+
+5. **Hidden Topics:**
+   - Collect from all agents
+   - Dedupe by name similarity (fuzzy match)
+   - Tag with detection methods: `complexity_analysis`, `error_pattern`, `expert_practice`
+
+6. **Union all prerequisite, related, and cross-domain links**
 
 **Fail-safety:**
 - If 1 agent fails: proceed with 3 agents, note in warnings
@@ -260,17 +322,62 @@ Launch critic agent with merged research:
 
 #### Step 7: Check Satisfaction Criteria
 
-Verify 7 criteria:
+Verify 7 criteria using SQL queries from `research.sql`:
 
-| # | Criterion | Pass Threshold |
-|---|-----------|----------------|
-| 1 | Minimum sources | ≥3 per core topic |
-| 2 | Hidden topic coverage | All 3 detection methods ran |
-| 3 | Prerequisites checked | All topics have entry |
-| 4 | Critic approved | No critical challenges |
-| 5 | Cross-validation | ≥50% topic overlap |
-| 6 | Recency | Sources ≤2 years old |
-| 7 | Goal type fit | Topic count matches |
+| # | Criterion | Pass Threshold | SQL Query |
+|---|-----------|----------------|-----------|
+| 1 | Minimum sources | ≥3 per core topic | `SELECT ... HAVING source_count < 3` |
+| 2 | Hidden topic coverage | All 3 detection methods ran | `SELECT ... detection_method` |
+| 3 | Prerequisites checked | All topics have entry | `SELECT ... WHERE p.id IS NULL` |
+| 4 | Critic approved | No critical challenges | Check verdict = "approve" |
+| 5 | Cross-validation | ≥50% topic overlap | `SELECT ... overlap_ratio` |
+| 6 | Recency | Sources ≤2 years old | `SELECT ... avg_age_months` |
+| 7 | Goal type fit | Topic count matches | `SELECT ... fit_status` |
+
+**Verification queries:**
+
+1. **Minimum sources:**
+   ```sql
+   SELECT topic_id, name, COUNT(ts.id) AS source_count
+   FROM topics t LEFT JOIN topic_sources ts ON t.id = ts.topic_id
+   WHERE t.is_hidden = 0 GROUP BY t.id HAVING source_count < 3;
+   ```
+
+2. **Hidden topic detection:**
+   ```sql
+   SELECT CASE WHEN COUNT(DISTINCT detection_method) = 3 THEN 1 ELSE 0 END
+   FROM topics WHERE is_hidden = 1 AND detection_method IS NOT NULL;
+   ```
+
+3. **Prerequisites coverage:**
+   ```sql
+   SELECT t.topic_id, t.name FROM topics t
+   LEFT JOIN prerequisites p ON t.id = p.topic_id
+   WHERE p.id IS NULL AND t.is_hidden = 0;
+   ```
+
+5. **Cross-validation:**
+   ```sql
+   SELECT CAST(COUNT(DISTINCT ts1.topic_id) AS REAL) /
+   (SELECT COUNT(*) FROM topics WHERE is_hidden = 0) AS overlap_ratio
+   FROM topic_sources ts1 WHERE EXISTS (
+     SELECT 1 FROM topic_sources ts2
+     WHERE ts2.topic_id = ts1.topic_id AND ts2.source_type != ts1.source_type
+   );
+   ```
+
+6. **Recency:**
+   ```sql
+   SELECT AVG((julianday('now') - julianday(source_date)) / 30) AS avg_age_months
+   FROM topic_sources WHERE source_date IS NOT NULL;
+   ```
+
+7. **Goal type fit:**
+   ```sql
+   SELECT goal_type, COUNT(*) AS topic_count,
+   CASE goal_type WHEN 'exam' THEN CASE WHEN COUNT(*) BETWEEN 30 AND 60 THEN 'PASS' ELSE 'FAIL' END ... END
+   FROM topics WHERE is_hidden = 0;
+   ```
 
 **If criteria fail:**
 - Critical: Re-research (max 2 rounds)

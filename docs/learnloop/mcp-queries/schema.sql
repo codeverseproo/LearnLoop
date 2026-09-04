@@ -134,3 +134,20 @@ CREATE INDEX IF NOT EXISTS idx_topic_sources_topic ON topic_sources(topic_id);
 CREATE INDEX IF NOT EXISTS idx_topic_sources_type ON topic_sources(source_type);
 CREATE INDEX IF NOT EXISTS idx_topics_hidden ON topics(is_hidden);
 CREATE INDEX IF NOT EXISTS idx_topics_detection ON topics(detection_method);
+
+-- Research execution metadata
+CREATE TABLE IF NOT EXISTS research_metadata (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    goal_id TEXT NOT NULL,
+    agent_type TEXT NOT NULL CHECK(agent_type IN ('official', 'academic', 'practical', 'expert')),
+    search_iterations INTEGER DEFAULT 0,
+    research_dir TEXT,
+    artifacts_saved INTEGER DEFAULT 0,
+    researched_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (goal_id) REFERENCES goal_meta(goal_id),
+    UNIQUE(goal_id, agent_type)
+);
+
+-- Indexes for research_metadata
+CREATE INDEX IF NOT EXISTS idx_research_goal ON research_metadata(goal_id);
+CREATE INDEX IF NOT EXISTS idx_research_agent ON research_metadata(agent_type);

@@ -61,6 +61,37 @@ Assume: 1 topic = 2-4 hours study
 
 **Issue format:** "{n} topics in {timeline} = {hours} hours/week"
 
+### Check 10: WebSearch Execution Verification
+Did each agent execute real searches?
+**Verify:** `search_iterations >= 3` for all 4 agents
+
+**Issue format:** "Agent '{type}' ran only {n} searches (needs ≥3)"
+
+**Critical if:** Any agent has `search_failed: true` OR `search_iterations < 3`
+
+### Check 11: Research Artifacts Existence
+Were research artifacts properly saved?
+**Verify:** 3 files per agent in `~/.learnloop/research/{goal_id}/`:
+- `{agent_type}-raw-results.json`
+- `{agent_type}-sources.md`
+- `{agent_type}-analysis.md`
+
+**Issue format:** "Missing artifacts for '{type}': {missing_files}"
+
+**Severity:** warning (proceed if searches succeeded)
+
+### Check 12: URL Pattern Validation
+Are sources real (not fabricated)?
+**Red flags:**
+- `example.com`, `docs.example.com`
+- `vendor.com` without https
+- URLs with placeholder patterns `{...}`
+- Same domain for all sources
+
+**Issue format:** "Agent '{type}' has suspicious URL pattern: {url}"
+
+**Critical if:** Fabrication detected
+
 ## Output Format
 
 ```json
@@ -81,8 +112,8 @@ Assume: 1 topic = 2-4 hours study
 
 ## Severity Levels
 
-- **critical**: Must fix before syllabus generation (missing core topics, no sources)
-- **warning**: Should fix but can proceed (low source count, outdated)
+- **critical**: Must fix before syllabus generation (missing core topics, no sources, no WebSearch)
+- **warning**: Should fix but can proceed (low source count, outdated, missing artifacts)
 - **info**: Nice to have (cross-domain links, practical gaps)
 
 ## Rules
@@ -92,3 +123,15 @@ Assume: 1 topic = 2-4 hours study
 - If all pass: verdict = "approve"
 - Always provide at least 1 piece of positive feedback
 - Never output empty challenges array - use "all checks passed" if no issues
+
+## WebSearch Failure Handling
+
+If any agent returns `search_failed: true`:
+1. Mark as CRITICAL (Check 10)
+2. Do NOT proceed to syllabus generation
+3. Return verdict: "reject" with reason: "WebSearch unavailable or failed"
+
+If WebSearch succeeded but artifacts missing:
+1. Mark as WARNING (Check 11)
+2. Proceed with syllabus but note in output
+3. Agent outputs still valid (search results in agent response)
