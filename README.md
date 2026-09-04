@@ -238,6 +238,7 @@ Interview data stored in SQLite `goal_meta` table:
 ┌─────────────────────────────────────────────────────┐
 │                   WARM (SQLite)                     │
 │      ~/.learnloop/goals/{goal_id}/memory.db      │
+│      ~/.learnloop/research/{goal_id}/            │ ← Research artifacts from discovery agents
 │      Persistent state, FSRS tracking, sessions      │
 └───────────────────────┬─────────────────────────────┘
                         │

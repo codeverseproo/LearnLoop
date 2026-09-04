@@ -67,6 +67,7 @@ On `syllabus_generation` workflow trigger:
 |------|---------|
 | `~/.learnloop/` | Base directory |
 | `~/.learnloop/goals/{goal_id}/memory.db` | Per-goal SQLite |
+| `~/.learnloop/research/{goal_id}/` | Research artifacts from discovery agents |
 | `~/.learnloop/backups/` | Backup storage |
 
 **Note:** Database initialization runs automatically on every new goal. No manual setup required.
@@ -171,22 +172,39 @@ See §1.5 - Auto-initialize `~/.learnloop/goals/{goal_id}/memory.db`
 
 #### Step 3: Launch Discovery Agents (Parallel)
 
+**CRITICAL: Agents MUST execute real WebSearch — no generic outputs from training data.**
+
 Spawn 4 agents simultaneously using `Agent` tool:
 
-| Agent | Prompt File | Source Focus |
-|-------|-------------|--------------|
-| Agent 1 | `prompts/discovery-agent-official.md` | Curriculum, vendor docs |
-| Agent 2 | `prompts/discovery-agent-academic.md` | Papers, textbooks |
-| Agent 3 | `prompts/discovery-agent-practical.md` | Tutorials, blogs, forums |
-| Agent 4 | `prompts/discovery-agent-expert.md` | Production, case studies |
+| Agent | Prompt File | Source Focus | Min Searches |
+|-------|-------------|--------------|--------------|
+| Agent 1 | `prompts/discovery-agent-official.md` | Curriculum, vendor docs | 3 searches |
+| Agent 2 | `prompts/discovery-agent-academic.md` | Papers, textbooks | 3 searches |
+| Agent 3 | `prompts/discovery-agent-practical.md` | Tutorials, blogs, forums | 3 searches |
+| Agent 4 | `prompts/discovery-agent-expert.md` | Production, case studies | 3 searches |
+
+**Agent Execution Requirements:**
+
+1. **MUST use WebSearch tool** — each agent runs 3+ distinct queries
+2. **MUST cite real URLs** — no fabricated sources
+3. **MUST save research artifacts** to `~/.learnloop/research/{goal_id}/`:
+   - `{agent_type}-raw-results.json` — full search outputs
+   - `{agent_type}-sources.md` — curated source list with URLs
+   - `{agent_type}-analysis.md` — hidden topic detection reasoning
+
+4. **If WebSearch unavailable or fails:**
+   - Agent returns: `{"search_failed": true, "reason": "..."}`
+   - Confidence marked as 0.2
+   - Skill prompts user: "Web search unavailable. Syllabus will be less comprehensive. Continue?"
 
 **Each agent returns:**
-- topics[] with sources
+- topics[] with sources (real URLs)
 - hidden_topics[] with detection method
 - prerequisites{}
 - related_topics{}
 - cross_domain{}
-- confidence score
+- confidence score (based on actual search results)
+- search_iterations: number (must be ≥3 for valid research)
 
 #### Step 4: Merge Results
 
