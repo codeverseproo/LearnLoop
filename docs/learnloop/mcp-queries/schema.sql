@@ -14,6 +14,11 @@ CREATE TABLE IF NOT EXISTS goal_meta (
     timeline TEXT,
     daily_availability TEXT,
     interview_complete INTEGER DEFAULT 0,
+    -- Interview stage tracking
+    stage_1_complete INTEGER DEFAULT 0,
+    stage_2_complete INTEGER DEFAULT 0,
+    stage_3_complete INTEGER DEFAULT 0,
+    goal_interview_complete INTEGER DEFAULT 0,
     -- Budget configuration from interview
     agent_budget INTEGER DEFAULT -1,
     budget_enforcement TEXT DEFAULT 'warning' CHECK(budget_enforcement IN ('warning', 'hard_limit')),
