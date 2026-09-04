@@ -73,6 +73,61 @@ On `syllabus_generation` workflow trigger:
 
 ---
 
+## 1.6 Interview System
+
+Three-stage interview flow captures user preferences before generation.
+
+### Onboarding Interview
+
+| Trigger | Example Phrases |
+|---------|-----------------|
+| First skill use | "I want to learn X", "Create a study plan" (when no goal exists) |
+| New user detected | No `onboarding_complete` flag in any goal |
+
+**Flow:**
+1. Check `onboarding_complete` flag
+2. If false -> trigger `onboarding-availability.md`
+3. Store in `availability_json`
+4. Trigger `onboarding-learning-style.md`
+5. Store in `learning_style_json`
+6. Set `onboarding_complete = 1`
+
+**Blocking Condition:** Onboarding incomplete -> no goal creation
+
+### Per-Goal Interview
+
+| Trigger | Example Phrases |
+|---------|-----------------|
+| Goal creation | After parsing goal, before database init |
+| New goal detected | "I want to learn X" (new goal_id) |
+
+**Flow:**
+1. After database initialization (Step 2 of syllabus_generation)
+2. Check `goal_interview_complete` flag
+3. If false -> trigger 4 per-goal prompts sequentially
+4. Store in `goal_profile_json`
+5. Set `goal_interview_complete = 1`
+6. Continue to discovery agents
+
+**Blocking Condition:** Goal interview incomplete -> no syllabus generation
+
+### Per-Note Interview
+
+| Trigger | Example Phrases |
+|---------|-----------------|
+| Note generation | "Generate notes for X", "Create a note" |
+| Learning session | Before presenting new content |
+
+**Flow:**
+1. Before note generation
+2. Trigger 4 per-note prompts sequentially
+3. Store in `note_preferences_json`
+4. Generate note with preferences applied
+
+**Non-Blocking:** Note preferences empty -> use goal defaults (per-note not mandatory for subsequent notes)
+
+---
+
 ## 2. Twelve Workflows
 
 ### Planning Workflows

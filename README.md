@@ -1,6 +1,6 @@
 # MIT Learning Skill
 
-**Intent-driven learning skill with FSRS-6 spaced repetition, gamification, and zero Python dependency.**
+**Intent-driven learning skill with FSRS-6 spaced repetition, research-based syllabus generation, and zero Python dependency.**
 
 ---
 
@@ -10,26 +10,26 @@
 2. [Quick Start](#quick-start)
 3. [Installation](#installation)
 4. [Features](#features)
-5. [12 Workflows](#12-workflows)
-6. [Architecture](#architecture)
-7. [FSRS-6 Algorithm](#fsrs-6-algorithm)
-8. [Demo Commands](#demo-commands)
+5. [Three-Stage Interview System](#three-stage-interview-system)
+6. [12 Workflows](#12-workflows)
+7. [Architecture](#architecture)
+8. [FSRS-6 Algorithm](#fsrs-6-algorithm)
 9. [File Structure](#file-structure)
 10. [Testing](#testing)
 11. [Research Foundation](#research-foundation)
 12. [Error Handling](#error-handling)
-13. [Contributing](#contributing)
 
 ---
 
 ## What This Skill Does
 
 MIT Learning Skill helps you:
-- **Create personalized learning plans** for any goal (exams, skills, degrees, topics)
+- **Create personalized learning plans** for any goal (exams, skills, degrees, topics) using layered research from academic, official, and expert sources
 - **Study effectively** with FSRS-6 spaced repetition (20-30% fewer reviews than traditional SRS)
 - **Track progress** across multiple learning goals with visual dashboards
-- **Build lasting knowledge** with evidence-based learning techniques
+- **Build lasting knowledge** with evidence-based learning techniques and claim triangulation
 - **Stay motivated** with streak mechanics and achievement system
+- **Capture preferences** through adaptive 3-stage interviews before content generation
 
 ---
 
@@ -41,8 +41,10 @@ MIT Learning Skill helps you:
 ```
 
 The skill will:
+- Conduct onboarding interview (availability, learning style)
+- Conduct per-goal interview (baseline, exam requirements, timeline, preferences)
 - Analyze your goal type (exam/skill/degree/topic)
-- Generate a personalized syllabus with topics
+- Research and generate a personalized syllabus with hidden topic detection
 - Initialize SQLite database with FSRS-6 tracking
 - Set up spaced repetition schedule
 
@@ -52,6 +54,7 @@ The skill will:
 ```
 
 The skill will:
+- Conduct per-note interview (depth, focus, content, time budget)
 - Provide structured notes with examples
 - Generate practice problems
 - Track your performance
@@ -110,14 +113,72 @@ The skill shows:
 
 | Feature | Description | Benefit |
 |---------|-------------|---------|
-| **Research-Based Syllabus** | 4 parallel agents (official/academic/practical/expert) | Comprehensive coverage |
-| **Hidden Topic Detection** | 3 methods: complexity, error patterns, expert practice | No blind spots |
+| **Research-Based Syllabus** | 4 parallel agents (official/academic/practical/expert) | Comprehensive coverage from credible sources |
+| **Hidden Topic Detection** | 3 methods: complexity, error patterns, expert practice | No blind spots in your learning plan |
 | **Knowledge Graph** | Prerequisite + related + cross-domain links | Connected learning |
-| **Critic Quality Loop** | 9 checks, max 3 rounds, satisfaction criteria | Verified syllabus |
+| **Critic Quality Loop** | 9 checks, max 3 rounds, satisfaction criteria | Verified syllabus quality |
+| **3-Stage Interview System** | Onboarding → Per-Goal → Per-Note | Personalized content generation |
 | **FSRS-6 Scheduler** | Free Spaced Repetition Scheduler algorithm | 20-30% fewer reviews |
 | **Pure SQLite MCP** | Zero Python dependency | Simpler architecture |
 | **Streak System** | Loss aversion mechanic with streak freeze | 3.6x higher engagement |
 | **Multi-Goal Isolation** | Separate SQLite database per goal | Organized progress |
+
+---
+
+## Three-Stage Interview System
+
+The skill captures user preferences through adaptive sequential interviews before content generation.
+
+### Stage 1: Onboarding Interview
+
+**Trigger:** First skill use or new user detected
+
+**Captures:**
+- Availability (hours/day, days/week, preferred times)
+- Learning style (visual/auditory/kinesthetic, pacing, note format)
+
+**Blocking:** Must complete before goal creation
+
+### Stage 2: Per-Goal Interview
+
+**Trigger:** Goal creation
+
+**Captures:**
+- Baseline knowledge (goal-specific level, topics, priorities)
+- Exam requirements (date, passing score, prerequisites)
+- Timeline & intensity (weeks, hours/day, milestones)
+- Note customization (default depth, format, inclusions)
+
+**Blocking:** Must complete before syllabus generation
+
+### Stage 3: Per-Note Interview
+
+**Trigger:** Before each note generation
+
+**Captures:**
+- Depth level (overview/detailed/expert)
+- Focus mode (exam-oriented/practical/theoretical)
+- Additional content (examples/exercises/flashcards)
+- Time budget (quick/standard/deep)
+
+**Non-Blocking:** Uses goal defaults if skipped
+
+### Interview Flow
+
+```
+First Use → Onboarding Interview → Goal Created → Per-Goal Interview
+    ↓
+Syllabus Generated → Note Request → Per-Note Interview → Content Generated
+```
+
+### Storage
+
+Interview data stored in SQLite `goal_meta` table:
+- `availability_json` - Onboarding availability
+- `learning_style_json` - Onboarding learning style
+- `goal_profile_json` - Per-goal profile (baseline, exam, timeline, customization)
+- `note_preferences_json` - Per-note preferences (transient, overwritten each generation)
+- `last_note_preferences_json` - Previous preferences for reuse
 
 ---
 
@@ -188,20 +249,32 @@ The skill shows:
 └─────────────────────────────────────────────────────┘
 ```
 
-### Database Schema (10 Tables)
+### Database Schema (12 Tables)
 
 ```sql
-goal_meta        -- Goal configuration
-topics           -- Topics with mastery, confidence, hidden flags
-fsrs_state       -- FSRS-6 state per topic
-sessions         -- Learning/review session history
-prerequisites    -- Topic dependency graph
-topic_links      -- Related/cross-domain connections
-topic_sources    -- Source citations per topic
-note_registry    -- Obsidian vault links
-streak_state     -- Daily streak tracking
-achievements     -- Unlocked achievements
+goal_meta            -- Goal configuration + interview data
+topics               -- Topics with mastery, confidence, hidden flags
+fsrs_state           -- FSRS-6 state per topic
+sessions             -- Learning/review session history
+prerequisites        -- Topic dependency graph
+topic_links          -- Related/cross-domain connections
+topic_sources        -- Source citations per topic
+note_registry        -- Obsidian vault links
+streak_state         -- Daily streak tracking
+achievements         -- Unlocked achievements
 ```
+
+### Interview Columns (goal_meta)
+
+| Column | Type | Purpose |
+|--------|------|---------|
+| `availability_json` | TEXT | Onboarding: hours/day, days/week, preferred times |
+| `learning_style_json` | TEXT | Onboarding: visual/auditory/kinesthetic, pacing |
+| `goal_profile_json` | TEXT | Per-Goal: baseline, exam, timeline, customization |
+| `note_preferences_json` | TEXT | Per-Note: transient preferences |
+| `last_note_preferences_json` | TEXT | Previous note preferences for reuse |
+| `onboarding_complete` | INTEGER | Flag: onboarding done |
+| `goal_interview_complete` | INTEGER | Flag: goal interview done |
 
 ---
 
@@ -257,122 +330,6 @@ mastery = 1 - exp(-0.5 * stability / difficulty)
 Range: 0.0 to 1.0
 ```
 
-**SQL Implementation:**
-```sql
-UPDATE topics
-SET mastery = 1 - EXP(-0.5 * stability / difficulty)
-WHERE id = :topic_id;
-```
-
-### State Machine
-
-```
-State 0 (New) → State 1 (Learning)    [First review]
-State 1 (Learning) → State 2 (Review)  [Performance >= 0.6]
-State 2 (Review) → State 3 (Relearning) [Performance < 0.6]
-State 3 (Relearning) → State 2         [Performance >= 0.6]
-```
-
----
-
-## Demo Commands
-
-### Creating Goals
-
-```bash
-# Exam preparation
-"I want to prepare for AWS Solutions Architect exam"
-
-# Skill acquisition
-"Teach me TypeScript fundamentals"
-
-# Topic study
-"I want to learn about Machine Learning"
-
-# Degree preparation
-"Help me prepare for my Computer Science degree"
-```
-
-### Learning Sessions
-
-```bash
-# Start learning
-"Teach me about IAM and Access Management"
-"Learn TypeScript Type System"
-"Explain Supervised Learning to me"
-
-# Continue learning
-"Continue with my AWS certification"
-"What's next in my TypeScript learning?"
-"Continue learning Machine Learning"
-
-# Prerequisite activation
-"What should I know before learning Neural Networks?"
-"Connect this to what I already know"
-```
-
-### Review Sessions
-
-```bash
-# Review queue
-"What's due for review today?"
-"Show me my flashcards"
-"Time for spaced repetition"
-
-# Review specific topic
-"Review IAM with me"
-"Quiz me on Type System"
-"Test my knowledge of Supervised Learning"
-
-# Elaborative interrogation
-"Why does FSRS-6 work better than SM-2?"
-"Explain the mechanism of gradient descent"
-"How does the retrievability formula work?"
-```
-
-### Practice Sessions
-
-```bash
-# Single topic practice
-"Give me practice problems on IAM policies"
-"Test myself on TypeScript generics"
-"Practice Supervised Learning concepts"
-
-# Interleaved practice
-"Mixed practice on AWS topics"
-"Random problems from my syllabus"
-"Quiz me on multiple topics"
-```
-
-### Progress Tracking
-
-```bash
-# Dashboard
-"How am I doing?"
-"Show my progress"
-"Dashboard"
-
-# Specific metrics
-"What's my streak?"
-"How many topics have I mastered?"
-"What's my mastery level?"
-"Am I on track?"
-```
-
-### Schedule Management
-
-```bash
-# Schedule optimization
-"Optimize my study schedule"
-"When should I study?"
-"Plan my week"
-
-# Current affairs (for exam goals)
-"What's happening today?"
-"Current affairs for my exam"
-"News relevant to my syllabus"
-```
-
 ---
 
 ## File Structure
@@ -383,21 +340,27 @@ MIT/
 ├── README.md                   # This file
 └── docs/
     └── superpowers/
-        └── mcp-queries/        # SQLite MCP query templates
-            ├── README.md       # Query documentation
-            ├── schema.sql      # Database initialization (8 tables)
-            ├── fsrs.sql        # FSRS-6 algorithm in SQL
-            ├── learning.sql    # Learning session queries
-            ├── review.sql      # Review session queries
-            ├── practice.sql    # Practice session queries
-            ├── research.sql    # Research workflow queries
-            ├── streak.sql      # Streak tracking queries
-            └── backup.sql      # Backup operations
+        ├── architecture/       # Architecture documentation
+        ├── mcp-queries/         # SQLite MCP query templates
+        │   ├── schema.sql      # Database initialization
+        │   ├── fsrs.sql        # FSRS-6 algorithm
+        │   ├── learning.sql    # Learning session queries
+        │   ├── review.sql      # Review session queries
+        │   ├── interview-checks.sql  # Interview enforcement
+        │   └── migrations/     # Schema migrations
+        ├── prompts/            # Agent and interview prompts
+        │   ├── interviews/     # 3-stage interview prompts
+        │   │   ├── onboarding/
+        │   │   ├── per-goal/
+        │   │   └── per-note/
+        │   ├── discovery-agent-*.md
+        │   └── critic-agent.md
+        ├── specs/              # Design specifications
         └── tests/              # SQL test suite
             ├── unit/test_fsrs.sql
             ├── integration/test_workflows.sql
-            ├── edge-cases/test_edge_cases.sql
-            └── run_tests.sh
+            ├── integration/test_interviews.sql
+            └── edge-cases/test_edge_cases.sql
 ```
 
 ---
@@ -426,12 +389,14 @@ cd docs/superpowers/tests
 ✓ Test: Streak tracking
 ✓ Test: Achievements
 
-=== Edge Case Tests ===
-✓ Test: Empty queue handling
-✓ Test: Maximum mastery (1.0)
-✓ Test: Maximum stability (365)
+=== Interview Integration Tests ===
+✓ Test: Schema columns
+✓ Test: Default values
+✓ Test: JSON extraction
+✓ Test: Enforcement logic
+✓ Test: Rollback safety
 
-=== ALL 11 TESTS PASSED ===
+=== ALL TESTS PASSED ===
 ```
 
 ---
@@ -477,16 +442,7 @@ All errors use codes E001-E699. See SKILL.md for details.
 - FSRS calculation failure → Default 7-day interval
 - Vault write failure → SQLite-only fallback
 - Research failure → Mark "needs manual research"
-
----
-
-## Contributing
-
-This skill follows:
-- One feature per commit
-- All tests must pass before commit
-- SQL queries use parameterized syntax (`:param`)
-- CHECK constraints for data safety
+- Interview incomplete → Block generation, prompt user
 
 ---
 
@@ -494,6 +450,7 @@ This skill follows:
 
 | Version | Date | Changes |
 |---------|------|---------|
+| 1.2.0 | 2026-09-04 | 3-stage interview system: onboarding, per-goal, per-note with JSON storage |
 | 1.1.0 | 2026-09-03 | Research-based syllabus: 4 parallel agents, hidden topics, knowledge graph, critic loop |
 | 1.0.0 | 2026-09-03 | Pure SQLite MCP architecture, zero Python dependency |
 
