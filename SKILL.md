@@ -74,58 +74,80 @@ On `syllabus_generation` workflow trigger:
 
 ---
 
-## 1.6 Interview System
+## 1.6 Interview System (Mandatory 3-Stage)
 
-Three-stage interview flow captures user preferences before generation.
+**BLOCKING: No goal creation before interview complete.**
 
-### Onboarding Interview
+### Stage 1: Availability
 
-| Trigger | Example Phrases |
-|---------|-----------------|
-| First skill use | "I want to learn X", "Create a study plan" (when no goal exists) |
-| New user detected | No `onboarding_complete` flag in any goal |
+**Trigger:** First skill use or new user detected
 
 **Flow:**
-1. Check `onboarding_complete` flag
-2. If false -> trigger `onboarding-availability.md`
-3. Store in `availability_json`
-4. Trigger `onboarding-learning-style.md`
-5. Store in `learning_style_json`
-6. Set `onboarding_complete = 1`
+1. Check `onboarding_complete` flag in goal_meta
+2. If false → trigger `prompts/interviews/onboarding/availability.md`
+3. Store in `goal_meta.availability_json`
+4. Mark `stage_1_complete = 1`
 
-**Blocking Condition:** Onboarding incomplete -> no goal creation
+**Questions:**
+- hours_per_day: integer
+- preferred_times: string (morning/afternoon/evening)
+- constraints: text (work schedule, etc.)
 
-### Per-Goal Interview
+### Stage 2: Learning Style
 
-| Trigger | Example Phrases |
-|---------|-----------------|
-| Goal creation | After parsing goal, before database init |
-| New goal detected | "I want to learn X" (new goal_id) |
+**Trigger:** After Stage 1 complete
 
 **Flow:**
-1. After database initialization (Step 2 of syllabus_generation)
-2. Check `goal_interview_complete` flag
-3. If false -> trigger 4 per-goal prompts sequentially
-4. Store in `goal_profile_json`
-5. Set `goal_interview_complete = 1`
-6. Continue to discovery agents
+1. Check `stage_2_complete` flag
+2. If false → trigger `prompts/interviews/onboarding/learning-style.md`
+3. Store in `goal_meta.learning_style_json`
+4. Mark `stage_2_complete = 1`
 
-**Blocking Condition:** Goal interview incomplete -> no syllabus generation
+**Questions:**
+- format_preference: video|reading|interactive
+- pace: self-paced|structured
+- difficulty_tolerance: conservative|moderate|aggressive
 
-### Per-Note Interview
+### Stage 3: Goal Profile + Budget
 
-| Trigger | Example Phrases |
-|---------|-----------------|
-| Note generation | "Generate notes for X", "Create a note" |
-| Learning session | Before presenting new content |
+**Trigger:** After database initialization
 
 **Flow:**
-1. Before note generation
-2. Trigger 4 per-note prompts sequentially
-3. Store in `note_preferences_json`
-4. Generate note with preferences applied
+1. Check `goal_interview_complete` flag
+2. If false → trigger `prompts/interviews/per-goal/baseline.md`
+3. Store in `goal_meta.goal_profile_json`
+4. Capture `agent_budget` (10/20/50/-1)
+5. Mark `goal_interview_complete = 1`, `onboarding_complete = 1`
 
-**Non-Blocking:** Note preferences empty -> use goal defaults (per-note not mandatory for subsequent notes)
+**Questions:**
+- baseline_knowledge: beginner|intermediate|advanced
+- timeline_weeks: integer
+- intensity: relaxed|standard|intensive
+- **agent_budget**: Conservative(10)|Balanced(20)|Aggressive(50)|Unlimited(-1)
+
+### Blocking Enforcement
+
+```markdown
+IF onboarding_complete = 0:
+  BLOCK execution
+  RETURN: "Interview required. Continue with Stage 1?"
+
+IF goal_interview_complete = 0:
+  BLOCK goal creation
+  RETURN: "Goal interview required. Continue with Stage 3?"
+```
+
+### Budget Storage
+
+```sql
+UPDATE goal_meta
+SET agent_budget = :budget_value,
+    budget_enforcement = 'warning',
+    stage_3_complete = 1,
+    goal_interview_complete = 1,
+    onboarding_complete = 1
+WHERE goal_id = :goal_id;
+```
 
 ---
 
@@ -675,55 +697,75 @@ sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gate
 
 ---
 
-### Wave 3: Critic Agent (1 agent, with date context)
+### Wave 3: Critic Agent (Mandatory Blocking)
 
 **Execute:**
 
-1. Merge Wave 1 + Wave 2 results
+1. Merge Wave 1 + Wave 2 results into JSON
 2. Spawn critic agent with current date:
    ```markdown
-   **Critic Prompt:**
-
-   Current Date: 2026-09-04
-
-   Verify:
-   - Research completeness (≥3 sources per topic)
-   - Hidden topic detection (3 methods used)
-   - Source recency (≤2 years for exam goals)
-   - Triangulation (≥3 agent types)
-
-   Verdict options: APPROVED | APPROVED_WITH_WARNINGS | REJECT
+   Current Date: {current_date}
+   Agent: learnloop:critic
+   Input: merged_research.json
    ```
-3. Wait for verdict
-4. If APPROVED/APPROVED_WITH_WARNINGS: proceed to Wave 5 (Output)
-5. If REJECT: proceed to Wave 4 (Repair)
+3. Wait for verdict (timeout: 120s)
+4. Store verdict in `critic_verdict` table:
+   ```sql
+   INSERT INTO critic_verdict (goal_id, verdict, confidence, warnings_count, challenges, repair_cycle)
+   VALUES (:goal_id, :verdict, :confidence, :warnings_count, :challenges, 0);
+   ```
+5. Run gate: `wave3-critic.sql`
+6. If gate_status = 'RETRY' → Wave 4 (Repair)
+7. If gate_status = 'PASS' → Wave 5 (Output)
+8. If gate_status = 'FORCE_APPROVE' → Wave 5 with warnings
 
----
-
-### Wave 4: Repair Loop (max 3 cycles)
+### Wave 4: Repair Loop (Max 5 Cycles)
 
 **Execute:**
 
 ```
-WHILE critic_verdict == "reject" AND repair_cycles < 3:
+repair_cycles = SELECT repair_cycles FROM execution_state WHERE goal_id = :goal_id
 
-  1. Extract challenges from critic verdict
-  2. Categorize: research_gap | detection_missing | validation_failed | quality_issue
-  3. Spawn repair agents (max 5, one per challenge type)
-  4. Wait for repairs to complete
-  5. Re-run critic (Wave 3)
-  6. If APPROVED: exit loop
-  7. If still REJECT and cycles < 3: continue
+WHILE critic_verdict = 'REJECT' AND repair_cycles < 5:
 
-If max cycles reached and still REJECT:
-  - Generate partial output with warnings
-  - Flag for manual review
+  1. Check budget remaining:
+     user_budget = SELECT agent_budget FROM goal_meta WHERE goal_id = :goal_id
+     agents_spawned = SELECT SUM(agent_spawns) FROM execution_state WHERE goal_id = :goal_id
+     
+     IF user_budget != -1 AND agents_spawned >= user_budget AND budget_enforcement = 'hard_limit':
+       FORCE APPROVED_WITH_WARNINGS
+       EXIT LOOP
+
+  2. Extract challenges from critic verdict
+  3. Spawn repair agents (max 5 parallel):
+     ```
+     for challenge in challenges[:5]:
+       Agent(subagent_type="learnloop:repair", 
+             name="repair-{topic}",
+             prompt="Current Date: {current_date}\nCycle: {repair_cycles + 1}/5\nChallenge: {challenge}")
+     ```
+  4. Each repair: minimum 10 WebSearch calls
+  5. Update topics in database
+  6. Increment repair_cycles:
+     ```sql
+     UPDATE execution_state 
+     SET repair_cycles = repair_cycles + 1 
+     WHERE goal_id = :goal_id;
+     ```
+  7. Re-run critic (Wave 3)
+  8. If APPROVED → EXIT LOOP
+
+IF repair_cycles >= 5:
+  Force APPROVED_WITH_WARNINGS
+  Log unresolved challenges
+  Proceed to Wave 5 (Output)
 ```
 
 **Exit Conditions:**
-- Critic verdict != "reject" (satisfied)
-- Max cycles (3) reached → partial output
+- critic_verdict IN ('APPROVED', 'APPROVED_WITH_WARNINGS')
+- repair_cycles >= 5 → force approve
 - User cancellation
+- Budget exhausted with hard_limit enforcement
 
 ---
 
@@ -756,6 +798,73 @@ sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gate
 - Skipping discovery agents
 - Proceeding with incomplete research
 - Outputting without critic approval
+
+---
+
+## State Machine: Execution Flow
+
+```
+ONBOARDING (check onboarding_complete)
+    │
+    ├── incomplete → INTERVIEW Stage 1-3 (BLOCKING)
+    │
+    └── complete → WAVE1_RUNNING
+                      │
+                      ├── Spawn 4 discovery agents (parallel)
+                      │
+WAVE1_RUNNING ──→ WAVE1_GATE
+                      │
+                      ├── FAIL → retry (max 2) → WAVE1_RUNNING
+                      │
+                      └── PASS → WAVE2_RUNNING
+                                    │
+                                    ├── Identify complex topics (SQL)
+                                    ├── Spawn 0-10 deep-dive agents
+                                    │
+WAVE2_RUNNING ──→ WAVE2_GATE
+                      │
+                      ├── FAIL → retry → WAVE2_RUNNING
+                      │
+                      └── PASS → WAVE3_RUNNING
+                                    │
+                                    ├── Spawn critic agent
+                                    ├── Wait for verdict
+                                    │
+WAVE3_RUNNING ──→ WAVE3_GATE
+                      │
+                      ├── RETRY → WAVE4_REPAIR
+                      │
+                      ├── FORCE_APPROVE → WAVE5_OUTPUT
+                      │
+                      └── PASS → WAVE5_OUTPUT
+                                    │
+WAVE4_REPAIR (loop, max 5 cycles)
+    │
+    ├── repair_cycles < 5 → re-spawn critic → WAVE3_RUNNING
+    │
+    └── repair_cycles >= 5 → WAVE5_OUTPUT (forced)
+                                │
+WAVE5_OUTPUT ──→ COMPLETE
+```
+
+**State Transitions:**
+
+| Current State | Next State | Condition |
+|---------------|------------|-----------|
+| ONBOARDING | INTERVIEW | onboarding_complete = 0 |
+| ONBOARDING | WAVE1_RUNNING | onboarding_complete = 1 |
+| INTERVIEW | WAVE1_RUNNING | interview_complete = 1 |
+| WAVE1_RUNNING | WAVE1_GATE | All 4 agents complete |
+| WAVE1_GATE | WAVE2_RUNNING | gate_status = 'PASS' |
+| WAVE1_GATE | WAVE1_RUNNING | gate_status = 'FAIL' (retry) |
+| WAVE2_RUNNING | WAVE2_GATE | Deep-dives complete (or none spawned) |
+| WAVE2_GATE | WAVE3_RUNNING | gate_status = 'PASS' |
+| WAVE3_RUNNING | WAVE3_GATE | Critic verdict received |
+| WAVE3_GATE | WAVE4_REPAIR | gate_status = 'RETRY' |
+| WAVE3_GATE | WAVE5_OUTPUT | gate_status IN ('PASS', 'FORCE_APPROVE') |
+| WAVE4_REPAIR | WAVE3_RUNNING | repair_cycles < 5 |
+| WAVE4_REPAIR | WAVE5_OUTPUT | repair_cycles >= 5 (forced) |
+| WAVE5_OUTPUT | COMPLETE | Syllabus generated |
 
 ---
 
