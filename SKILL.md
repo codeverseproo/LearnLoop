@@ -30,7 +30,7 @@ Intent-driven learning system with FSRS-6 spaced repetition, streak mechanics, a
 |------|---------|---------|----------|
 | **HOT** | Session context (RAM) | 0ms | Session |
 | **WARM** | SQLite (`~/.learnloop/goals/{goal_id}/memory.db`) | 1-5ms | Permanent |
-| **COLD** | Obsidian vault (`~/Obsidian/MIT-{goal-slug}/`) | 10-50ms | Permanent |
+| **COLD** | Obsidian vault (`~/Obsidian/LL-{goal-slug}/`) | 10-50ms | Permanent |
 
 ---
 
@@ -53,7 +53,7 @@ On `syllabus_generation` workflow trigger:
 3. **If not exists, initialize:**
    ```bash
    mkdir -p ~/.learnloop/goals/{goal_id}
-   sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/superpowers/mcp-queries/schema.sql
+   sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/schema.sql
    ```
 
 4. **Verify initialization:**
@@ -492,7 +492,7 @@ Daily current events (exam prep).
 
 ## 3. MCP Query Templates
 
-All data operations use SQLite MCP queries from `docs/superpowers/mcp-queries/`.
+All data operations use SQLite MCP queries from `docs/learnloop/mcp-queries/`.
 
 ### Usage Pattern
 
@@ -635,7 +635,7 @@ Where:
 
 #### Stability Update (Success)
 
-**SQL Implementation** (see `docs/superpowers/mcp-queries/fsrs.sql`):
+**SQL Implementation** (see `docs/learnloop/mcp-queries/fsrs.sql`):
 
 ```sql
  UPDATE fsrs_state

@@ -1,4 +1,4 @@
-# MIT-009: Streak & Achievement System
+# LL-009: Streak & Achievement System
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,13 +7,13 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-009
+ID: LL-009
 Title: Streak & Achievement System
 Phase: 2
 Effort: 3 hours
 Impact: Gamification via MCP
-Dependencies: MIT-004 (Phase 1 Complete)
-Parallelizable with: MIT-005, MIT-006, MIT-007, MIT-008
+Dependencies: LL-004 (Phase 1 Complete)
+Parallelizable with: LL-005, LL-006, LL-007, LL-008
 ```
 
 ---
@@ -22,13 +22,13 @@ Parallelizable with: MIT-005, MIT-006, MIT-007, MIT-008
 
 ```bash
 set -e
-echo "=== PREFLIGHT CHECKS FOR MIT-009 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-009 ==="
 
 # 1. Phase 1 complete
-jq -e '.MIT-004.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: Phase 1 not complete"; exit 1; }
+jq -e '.LL-004.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: Phase 1 not complete"; exit 1; }
 
 # 2. streak.sql exists
-test -f docs/superpowers/mcp-queries/streak.sql || { echo "FAIL: streak.sql not found"; exit 1; }
+test -f docs/learnloop/mcp-queries/streak.sql || { echo "FAIL: streak.sql not found"; exit 1; }
 
 echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ```
@@ -38,11 +38,11 @@ echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ## STATE INITIALIZATION
 
 ```bash
-cat > .superpowers/checkpoints/MIT-009-START << 'EOF'
-{"storyId": "MIT-009", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
+cat > .superpowers/checkpoints/LL-009-START << 'EOF'
+{"storyId": "LL-009", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
 EOF
 
-jq '.MIT-009 = {"status": "in-progress", "phase": 2, "title": "Streak & Achievement System", "startedAt": "'$(date -Iseconds)'", "dependencies": ["MIT-004"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-009 = {"status": "in-progress", "phase": 2, "title": "Streak & Achievement System", "startedAt": "'$(date -Iseconds)'", "dependencies": ["LL-004"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 ```
 
 ---
@@ -345,7 +345,7 @@ grep -q "Achievement Definitions" SKILL.md && echo "✓ [4/4] SKILL.md has achie
 
 echo "=== PHASE 2 CHECK ==="
 echo "Checking Phase 2 completion..."
-jq '[.MIT-005, .MIT-006, .MIT-007, .MIT-008, .MIT-009 | select(.status == "passed")] | length' .superpowers/state/story-progress.json
+jq '[.LL-005, .LL-006, .LL-007, .LL-008, .LL-009 | select(.status == "passed")] | length' .superpowers/state/story-progress.json
 
 echo "=== ALL CRITERIA VERIFIED ==="
 ```
@@ -355,8 +355,8 @@ echo "=== ALL CRITERIA VERIFIED ==="
 ## CLEANUP & COMPLETION
 
 ```bash
-git add SKILL.md docs/superpowers/mcp-queries/streak.sql
-git commit -m "feat(MIT-009): streak and achievement system
+git add SKILL.md docs/learnloop/mcp-queries/streak.sql
+git commit -m "feat(LL-009): streak and achievement system
 
 - Daily activity detection
 - Streak increment logic
@@ -365,19 +365,19 @@ git commit -m "feat(MIT-009): streak and achievement system
 - Achievement unlock queries
 - Progress dashboard
 
-Story: MIT-009
+Story: LL-009
 Phase: 2
-Dependencies: MIT-004
+Dependencies: LL-004
 "
 
-jq '.MIT-009.status = "passed" | .MIT-009.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-009.status = "passed" | .LL-009.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-cat > .superpowers/checkpoints/MIT-009-PASS << 'EOF'
-{"storyId": "MIT-009", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
+cat > .superpowers/checkpoints/LL-009-PASS << 'EOF'
+{"storyId": "LL-009", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
 EOF
 
-echo "✓ MIT-009 passed"
+echo "✓ LL-009 passed"
 ```
 
 ---
@@ -387,15 +387,15 @@ echo "✓ MIT-009 passed"
 ```bash
 #!/bin/bash
 set -e
-REF=$(jq -r '.gitRef' .superpowers/checkpoints/MIT-009-START)
-git checkout $REF -- SKILL.md docs/superpowers/mcp-queries/streak.sql
-jq '.MIT-009.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
-rm -f .superpowers/checkpoints/MIT-009-*
+REF=$(jq -r '.gitRef' .superpowers/checkpoints/LL-009-START)
+git checkout $REF -- SKILL.md docs/learnloop/mcp-queries/streak.sql
+jq '.LL-009.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+rm -f .superpowers/checkpoints/LL-009-*
 echo "Rollback complete"
 ```
 
 ---
 
-**NEXT:** Proceed to Phase 3: Polish (MIT-010)
+**NEXT:** Proceed to Phase 3: Polish (LL-010)
 
-**END OF EXECUTION PROMPT FOR MIT-009**
+**END OF EXECUTION PROMPT FOR LL-009**

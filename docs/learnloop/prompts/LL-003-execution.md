@@ -1,4 +1,4 @@
-# MIT-003: FSRS-6 Calculations in SQL
+# LL-003: FSRS-6 Calculations in SQL
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,12 +7,12 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-003
+ID: LL-003
 Title: FSRS-6 Calculations in SQL
 Phase: 1
 Effort: 4 hours
 Impact: Spaced repetition without Python scheduler
-Dependencies: MIT-002 (Schema Initialization)
+Dependencies: LL-002 (Schema Initialization)
 Parallelizable with: None
 ```
 
@@ -22,13 +22,13 @@ Parallelizable with: None
 
 ```bash
 set -e
-echo "=== PREFLIGHT CHECKS FOR MIT-003 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-003 ==="
 
-# 1. MIT-002 passed
-jq -e '.MIT-002.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: MIT-002 not passed"; exit 1; }
+# 1. LL-002 passed
+jq -e '.LL-002.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: LL-002 not passed"; exit 1; }
 
 # 2. fsrs.sql exists
-test -f docs/superpowers/mcp-queries/fsrs.sql || { echo "FAIL: fsrs.sql not found"; exit 1; }
+test -f docs/learnloop/mcp-queries/fsrs.sql || { echo "FAIL: fsrs.sql not found"; exit 1; }
 
 # 3. Test database available
 test -f ~/.mit-learning/goals/test/memory.db || { echo "FAIL: Test database not found"; exit 1; }
@@ -41,21 +41,21 @@ echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ## STATE INITIALIZATION
 
 ```bash
-cat > .superpowers/checkpoints/MIT-003-START << 'EOF'
+cat > .superpowers/checkpoints/LL-003-START << 'EOF'
 {
-  "storyId": "MIT-003",
+  "storyId": "LL-003",
   "createdAt": "'$(date -Iseconds)'",
   "gitRef": "'$(git rev-parse HEAD)'",
-  "files": ["docs/superpowers/mcp-queries/fsrs.sql", "SKILL.md"]
+  "files": ["docs/learnloop/mcp-queries/fsrs.sql", "SKILL.md"]
 }
 EOF
 
-jq '.MIT-003 = {
+jq '.LL-003 = {
   "status": "in-progress",
   "phase": 1,
   "title": "FSRS-6 Calculations in SQL",
   "startedAt": "'$(date -Iseconds)'",
-  "dependencies": ["MIT-002"]
+  "dependencies": ["LL-002"]
 }' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 ```
 
@@ -236,7 +236,7 @@ Execute via MCP:
 2. Update fsrs_state with new stability/difficulty
 3. Update topics with new mastery
 
-See `docs/superpowers/mcp-queries/fsrs.sql` for complete queries.
+See `docs/learnloop/mcp-queries/fsrs.sql` for complete queries.
 ```
 
 ---
@@ -311,8 +311,8 @@ echo "=== ALL CRITERIA VERIFIED ==="
 ## CLEANUP & COMPLETION
 
 ```bash
-git add docs/superpowers/mcp-queries/fsrs.sql SKILL.md
-git commit -m "feat(MIT-003): FSRS-6 calculations in SQL
+git add docs/learnloop/mcp-queries/fsrs.sql SKILL.md
+git commit -m "feat(LL-003): FSRS-6 calculations in SQL
 
 - Verified retrievability formula: R = (1 + t/(9*S))^(-1)
 - Stability updates for success/failure
@@ -320,18 +320,18 @@ git commit -m "feat(MIT-003): FSRS-6 calculations in SQL
 - State machine transitions
 - Updated SKILL.md with FSRS section
 
-Story: MIT-003
-Dependencies: MIT-002
+Story: LL-003
+Dependencies: LL-002
 "
 
-jq '.MIT-003.status = "passed" | .MIT-003.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-003.status = "passed" | .LL-003.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-cat > .superpowers/checkpoints/MIT-003-PASS << 'EOF'
-{"storyId": "MIT-003", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
+cat > .superpowers/checkpoints/LL-003-PASS << 'EOF'
+{"storyId": "LL-003", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
 EOF
 
-echo "✓ MIT-003 passed"
+echo "✓ LL-003 passed"
 ```
 
 ---
@@ -341,15 +341,15 @@ echo "✓ MIT-003 passed"
 ```bash
 #!/bin/bash
 set -e
-REF=$(jq -r '.gitRef' .superpowers/checkpoints/MIT-003-START)
-git checkout $REF -- docs/superpowers/mcp-queries/fsrs.sql SKILL.md
-jq '.MIT-003.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
-rm -f .superpowers/checkpoints/MIT-003-*
+REF=$(jq -r '.gitRef' .superpowers/checkpoints/LL-003-START)
+git checkout $REF -- docs/learnloop/mcp-queries/fsrs.sql SKILL.md
+jq '.LL-003.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+rm -f .superpowers/checkpoints/LL-003-*
 echo "Rollback complete"
 ```
 
 ---
 
-**NEXT:** Proceed to MIT-004: Backup System
+**NEXT:** Proceed to LL-004: Backup System
 
-**END OF EXECUTION PROMPT FOR MIT-003**
+**END OF EXECUTION PROMPT FOR LL-003**

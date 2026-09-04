@@ -1,4 +1,4 @@
-# MIT-002: Schema Initialization via MCP
+# LL-002: Schema Initialization via MCP
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,13 +7,13 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-002
+ID: LL-002
 Title: Schema Initialization via MCP
 Phase: 1
 Effort: 3 hours
 Impact: Database creation without Python scripts
-Dependencies: MIT-001 (MCP Query Templates)
-Parallelizable with: None (depends on MIT-001)
+Dependencies: LL-001 (MCP Query Templates)
+Parallelizable with: None (depends on LL-001)
 ```
 
 ---
@@ -22,13 +22,13 @@ Parallelizable with: None (depends on MIT-001)
 
 ```bash
 set -e
-echo "=== PREFLIGHT CHECKS FOR MIT-002 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-002 ==="
 
-# 1. MIT-001 passed
-jq -e '.MIT-001.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: MIT-001 not passed"; exit 1; }
+# 1. LL-001 passed
+jq -e '.LL-001.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: LL-001 not passed"; exit 1; }
 
 # 2. Schema SQL exists
-test -f docs/superpowers/mcp-queries/schema.sql || { echo "FAIL: schema.sql not found"; exit 1; }
+test -f docs/learnloop/mcp-queries/schema.sql || { echo "FAIL: schema.sql not found"; exit 1; }
 
 # 3. Goal directory path
 echo "Goal directory will be: ~/.mit-learning/goals/<goal_id>/"
@@ -43,21 +43,21 @@ echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ```bash
 mkdir -p .superpowers/checkpoints
 
-cat > .superpowers/checkpoints/MIT-002-START << 'EOF'
+cat > .superpowers/checkpoints/LL-002-START << 'EOF'
 {
-  "storyId": "MIT-002",
+  "storyId": "LL-002",
   "createdAt": "'$(date -Iseconds)'",
   "gitRef": "'$(git rev-parse HEAD)'",
   "files": ["SKILL.md"]
 }
 EOF
 
-jq '.MIT-002 = {
+jq '.LL-002 = {
   "status": "in-progress",
   "phase": 1,
   "title": "Schema Initialization via MCP",
   "startedAt": "'$(date -Iseconds)'",
-  "dependencies": ["MIT-001"]
+  "dependencies": ["LL-001"]
 }' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 ```
 
@@ -244,23 +244,23 @@ echo "=== ALL CRITERIA VERIFIED ==="
 ```bash
 # Commit
 git add SKILL.md
-git commit -m "feat(MIT-002): schema initialization via MCP
+git commit -m "feat(LL-002): schema initialization via MCP
 
 - Add MCP-based database creation to SKILL.md
 - Test schema execution via SQLite MCP
 - Remove Python initialization dependency
 
-Story: MIT-002
-Dependencies: MIT-001
+Story: LL-002
+Dependencies: LL-001
 "
 
 # Update state
-jq '.MIT-002.status = "passed" | .MIT-002.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-002.status = "passed" | .LL-002.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-cat > .superpowers/checkpoints/MIT-002-PASS << 'EOF'
+cat > .superpowers/checkpoints/LL-002-PASS << 'EOF'
 {
-  "storyId": "MIT-002",
+  "storyId": "LL-002",
   "completedAt": "'$(date -Iseconds)'",
   "status": "passed",
   "acceptanceCriteria": [
@@ -272,7 +272,7 @@ cat > .superpowers/checkpoints/MIT-002-PASS << 'EOF'
 }
 EOF
 
-echo "✓ MIT-002 passed"
+echo "✓ LL-002 passed"
 ```
 
 ---
@@ -282,24 +282,24 @@ echo "✓ MIT-002 passed"
 ```bash
 #!/bin/bash
 set -e
-echo "Rolling back MIT-002..."
+echo "Rolling back LL-002..."
 
 # Remove test database
 rm -rf ~/.mit-learning/goals/test/
 
 # Restore SKILL.md
-REF=$(jq -r '.gitRef' .superpowers/checkpoints/MIT-002-START)
+REF=$(jq -r '.gitRef' .superpowers/checkpoints/LL-002-START)
 git checkout $REF -- SKILL.md
 
 # Update state
-jq '.MIT-002.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-002.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-rm -f .superpowers/checkpoints/MIT-002-*
+rm -f .superpowers/checkpoints/LL-002-*
 echo "Rollback complete"
 ```
 
 ---
 
-**NEXT:** Proceed to MIT-003: FSRS-6 Calculations in SQL
+**NEXT:** Proceed to LL-003: FSRS-6 Calculations in SQL
 
-**END OF EXECUTION PROMPT FOR MIT-002**
+**END OF EXECUTION PROMPT FOR LL-002**

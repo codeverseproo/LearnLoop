@@ -1,4 +1,4 @@
-# MIT-006: Review Session Workflow
+# LL-006: Review Session Workflow
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,13 +7,13 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-006
+ID: LL-006
 Title: Review Session Workflow
 Phase: 2
 Effort: 3 hours
 Impact: Spaced repetition without Python scheduler
-Dependencies: MIT-004 (Phase 1 Complete)
-Parallelizable with: MIT-005, MIT-007, MIT-008, MIT-009
+Dependencies: LL-004 (Phase 1 Complete)
+Parallelizable with: LL-005, LL-007, LL-008, LL-009
 ```
 
 ---
@@ -22,13 +22,13 @@ Parallelizable with: MIT-005, MIT-007, MIT-008, MIT-009
 
 ```bash
 set -e
-echo "=== PREFLIGHT CHECKS FOR MIT-006 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-006 ==="
 
 # 1. Phase 1 complete
-jq -e '.MIT-004.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: Phase 1 not complete"; exit 1; }
+jq -e '.LL-004.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: Phase 1 not complete"; exit 1; }
 
 # 2. review.sql exists
-test -f docs/superpowers/mcp-queries/review.sql || { echo "FAIL: review.sql not found"; exit 1; }
+test -f docs/learnloop/mcp-queries/review.sql || { echo "FAIL: review.sql not found"; exit 1; }
 
 echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ```
@@ -38,11 +38,11 @@ echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ## STATE INITIALIZATION
 
 ```bash
-cat > .superpowers/checkpoints/MIT-006-START << 'EOF'
-{"storyId": "MIT-006", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
+cat > .superpowers/checkpoints/LL-006-START << 'EOF'
+{"storyId": "LL-006", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
 EOF
 
-jq '.MIT-006 = {"status": "in-progress", "phase": 2, "title": "Review Session Workflow", "startedAt": "'$(date -Iseconds)'", "dependencies": ["MIT-004"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-006 = {"status": "in-progress", "phase": 2, "title": "Review Session Workflow", "startedAt": "'$(date -Iseconds)'", "dependencies": ["LL-004"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 ```
 
 ---
@@ -304,8 +304,8 @@ echo "=== ALL CRITERIA VERIFIED ==="
 ## CLEANUP & COMPLETION
 
 ```bash
-git add SKILL.md docs/superpowers/mcp-queries/review.sql
-git commit -m "feat(MIT-006): review session workflow
+git add SKILL.md docs/learnloop/mcp-queries/review.sql
+git commit -m "feat(LL-006): review session workflow
 
 - Complete review_session workflow in SKILL.md
 - Review queue query with priority ordering
@@ -313,19 +313,19 @@ git commit -m "feat(MIT-006): review session workflow
 - Performance ratings table
 - Mastery calculation
 
-Story: MIT-006
+Story: LL-006
 Phase: 2
-Dependencies: MIT-004
+Dependencies: LL-004
 "
 
-jq '.MIT-006.status = "passed" | .MIT-006.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-006.status = "passed" | .LL-006.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-cat > .superpowers/checkpoints/MIT-006-PASS << 'EOF'
-{"storyId": "MIT-006", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
+cat > .superpowers/checkpoints/LL-006-PASS << 'EOF'
+{"storyId": "LL-006", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
 EOF
 
-echo "✓ MIT-006 passed"
+echo "✓ LL-006 passed"
 ```
 
 ---
@@ -335,10 +335,10 @@ echo "✓ MIT-006 passed"
 ```bash
 #!/bin/bash
 set -e
-REF=$(jq -r '.gitRef' .superpowers/checkpoints/MIT-006-START)
-git checkout $REF -- SKILL.md docs/superpowers/mcp-queries/review.sql
-jq '.MIT-006.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
-rm -f .superpowers/checkpoints/MIT-006-*
+REF=$(jq -r '.gitRef' .superpowers/checkpoints/LL-006-START)
+git checkout $REF -- SKILL.md docs/learnloop/mcp-queries/review.sql
+jq '.LL-006.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+rm -f .superpowers/checkpoints/LL-006-*
 echo "Rollback complete"
 ```
 
@@ -346,4 +346,4 @@ echo "Rollback complete"
 
 **NEXT:** Continue Phase 2 workflows
 
-**END OF EXECUTION PROMPT FOR MIT-006**
+**END OF EXECUTION PROMPT FOR LL-006**

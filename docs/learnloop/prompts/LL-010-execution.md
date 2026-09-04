@@ -1,4 +1,4 @@
-# MIT-010: Error Handling via MCP
+# LL-010: Error Handling via MCP
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,12 +7,12 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-010
+ID: LL-010
 Title: Error Handling via MCP
 Phase: 3
 Effort: 3 hours
 Impact: Production-ready error handling
-Dependencies: MIT-005 through MIT-009 (Phase 2 Complete)
+Dependencies: LL-005 through LL-009 (Phase 2 Complete)
 Parallelizable with: None
 ```
 
@@ -22,10 +22,10 @@ Parallelizable with: None
 
 ```bash
 set -e
-echo "=== PREFLIGHT CHECKS FOR MIT-010 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-010 ==="
 
 # 1. Phase 2 complete
-for story in MIT-005 MIT-006 MIT-007 MIT-008 MIT-009; do
+for story in LL-005 LL-006 LL-007 LL-008 LL-009; do
     jq -e ".${story}.status == \"passed\"" .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: ${story} not passed"; exit 1; }
 done
 
@@ -37,11 +37,11 @@ echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ## STATE INITIALIZATION
 
 ```bash
-cat > .superpowers/checkpoints/MIT-010-START << 'EOF'
-{"storyId": "MIT-010", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
+cat > .superpowers/checkpoints/LL-010-START << 'EOF'
+{"storyId": "LL-010", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
 EOF
 
-jq '.MIT-010 = {"status": "in-progress", "phase": 3, "title": "Error Handling via MCP", "startedAt": "'$(date -Iseconds)'", "dependencies": ["MIT-005", "MIT-006", "MIT-007", "MIT-008", "MIT-009"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-010 = {"status": "in-progress", "phase": 3, "title": "Error Handling via MCP", "startedAt": "'$(date -Iseconds)'", "dependencies": ["LL-005", "LL-006", "LL-007", "LL-008", "LL-009"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 ```
 
 ---
@@ -282,7 +282,7 @@ echo "=== ALL CRITERIA VERIFIED ==="
 
 ```bash
 git add SKILL.md
-git commit -m "feat(MIT-010): error handling via MCP
+git commit -m "feat(LL-010): error handling via MCP
 
 - Error categories and recovery
 - Schema validation clamping
@@ -291,19 +291,19 @@ git commit -m "feat(MIT-010): error handling via MCP
 - FSRS bounds enforcement
 - Graceful degradation
 
-Story: MIT-010
+Story: LL-010
 Phase: 3
 Dependencies: Phase 2 complete
 "
 
-jq '.MIT-010.status = "passed" | .MIT-010.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-010.status = "passed" | .LL-010.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-cat > .superpowers/checkpoints/MIT-010-PASS << 'EOF'
-{"storyId": "MIT-010", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
+cat > .superpowers/checkpoints/LL-010-PASS << 'EOF'
+{"storyId": "LL-010", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
 EOF
 
-echo "✓ MIT-010 passed"
+echo "✓ LL-010 passed"
 ```
 
 ---
@@ -313,15 +313,15 @@ echo "✓ MIT-010 passed"
 ```bash
 #!/bin/bash
 set -e
-REF=$(jq -r '.gitRef' .superpowers/checkpoints/MIT-010-START)
+REF=$(jq -r '.gitRef' .superpowers/checkpoints/LL-010-START)
 git checkout $REF -- SKILL.md
-jq '.MIT-010.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
-rm -f .superpowers/checkpoints/MIT-010-*
+jq '.LL-010.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+rm -f .superpowers/checkpoints/LL-010-*
 echo "Rollback complete"
 ```
 
 ---
 
-**NEXT:** Proceed to MIT-011: Comprehensive Testing
+**NEXT:** Proceed to LL-011: Comprehensive Testing
 
-**END OF EXECUTION PROMPT FOR MIT-010**
+**END OF EXECUTION PROMPT FOR LL-010**

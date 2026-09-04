@@ -1,4 +1,4 @@
-# MIT-001: SQLite MCP Query Templates
+# LL-001: SQLite MCP Query Templates
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,7 +7,7 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-001
+ID: LL-001
 Title: Create SQLite MCP Query Templates for MIT Learning Skill
 Phase: 1
 Effort: 2 hours
@@ -28,7 +28,7 @@ Run these checks BEFORE starting implementation. Fail fast if any fail.
 # RUN THIS BLOCK FIRST
 set -e
 
-echo "=== PREFLIGHT CHECKS FOR MIT-001 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-001 ==="
 
 # 1. Environment
 echo "Checking environment..."
@@ -74,13 +74,13 @@ Create checkpoint and update state:
 # Create checkpoint
 mkdir -p .superpowers/checkpoints .superpowers/state
 
-cat > .superpowers/checkpoints/MIT-001-START << 'EOF'
+cat > .superpowers/checkpoints/LL-001-START << 'EOF'
 {
-  "storyId": "MIT-001",
+  "storyId": "LL-001",
   "createdAt": "'$(date -Iseconds)'",
   "gitRef": "'$(git rev-parse HEAD)'",
   "files": [
-    "docs/superpowers/mcp-queries/"
+    "docs/learnloop/mcp-queries/"
   ]
 }
 EOF
@@ -89,7 +89,7 @@ EOF
 test -f .superpowers/state/story-progress.json || echo '{}' > .superpowers/state/story-progress.json
 
 # Update state to in-progress
-jq '.MIT-001 = {
+jq '.LL-001 = {
   "status": "in-progress",
   "phase": 1,
   "title": "SQLite MCP Query Templates",
@@ -105,10 +105,10 @@ Create isolated worktree for this story:
 
 ```bash
 # Create worktree
-git worktree add .superpowers/worktrees/MIT-001 -b story/MIT-001
+git worktree add .superpowers/worktrees/LL-001 -b story/LL-001
 
 # Switch to worktree
-cd .superpowers/worktrees/MIT-001
+cd .superpowers/worktrees/LL-001
 
 echo "Working in isolated worktree: $(pwd)"
 echo "Branch: $(git branch --show-current)"
@@ -125,7 +125,7 @@ echo "Branch: $(git branch --show-current)"
 ```
 Create the following directory structure:
 
-docs/superpowers/mcp-queries/
+docs/learnloop/mcp-queries/
 ├── README.md           # Overview and usage
 ├── schema.sql          # Schema initialization
 ├── fsrs.sql            # FSRS-6 calculations
@@ -137,14 +137,14 @@ docs/superpowers/mcp-queries/
 └── backup.sql          # Backup operations
 
 Create the directory:
-mkdir -p docs/superpowers/mcp-queries
+mkdir -p docs/learnloop/mcp-queries
 ```
 
 **Expected outcome:** Directory structure created.
 
 **Verification:**
 ```bash
-ls -la docs/superpowers/mcp-queries/
+ls -la docs/learnloop/mcp-queries/
 ```
 
 ---
@@ -154,7 +154,7 @@ ls -la docs/superpowers/mcp-queries/
 **Prompt for this step:**
 
 ```
-Create docs/superpowers/mcp-queries/README.md with:
+Create docs/learnloop/mcp-queries/README.md with:
 
 # SQLite MCP Query Templates
 
@@ -194,7 +194,7 @@ sqlite3 ~/.mit-learning/goals/test/memory.db < schema.sql
 
 **Verification:**
 ```bash
-test -f docs/superpowers/mcp-queries/README.md && echo "✓ README created"
+test -f docs/learnloop/mcp-queries/README.md && echo "✓ README created"
 ```
 
 ---
@@ -204,7 +204,7 @@ test -f docs/superpowers/mcp-queries/README.md && echo "✓ README created"
 **Prompt for this step:**
 
 ```
-Create docs/superpowers/mcp-queries/schema.sql with complete database schema:
+Create docs/learnloop/mcp-queries/schema.sql with complete database schema:
 
 -- Goal metadata
 CREATE TABLE IF NOT EXISTS goal_meta (
@@ -305,7 +305,7 @@ CREATE INDEX IF NOT EXISTS idx_sessions_started ON sessions(started_at);
 
 **Verification:**
 ```bash
-grep -q "CREATE TABLE IF NOT EXISTS goal_meta" docs/superpowers/mcp-queries/schema.sql && echo "✓ Schema SQL created"
+grep -q "CREATE TABLE IF NOT EXISTS goal_meta" docs/learnloop/mcp-queries/schema.sql && echo "✓ Schema SQL created"
 ```
 
 ---
@@ -315,7 +315,7 @@ grep -q "CREATE TABLE IF NOT EXISTS goal_meta" docs/superpowers/mcp-queries/sche
 **Prompt for this step:**
 
 ```
-Create docs/superpowers/mcp-queries/fsrs.sql with FSRS-6 formulas as SQL:
+Create docs/learnloop/mcp-queries/fsrs.sql with FSRS-6 formulas as SQL:
 
 -- ============================================
 -- FSRS-6 CALCULATIONS
@@ -403,7 +403,7 @@ WHERE id = :topic_id;
 
 **Verification:**
 ```bash
-grep -q "retrievability" docs/superpowers/mcp-queries/fsrs.sql && echo "✓ FSRS SQL created"
+grep -q "retrievability" docs/learnloop/mcp-queries/fsrs.sql && echo "✓ FSRS SQL created"
 ```
 
 ---
@@ -413,7 +413,7 @@ grep -q "retrievability" docs/superpowers/mcp-queries/fsrs.sql && echo "✓ FSRS
 **Prompt for this step:**
 
 ```
-Create docs/superpowers/mcp-queries/learning.sql:
+Create docs/learnloop/mcp-queries/learning.sql:
 
 -- ============================================
 -- LEARNING SESSION QUERIES
@@ -467,7 +467,7 @@ ORDER BY t.mastery ASC;
 
 **Verification:**
 ```bash
-grep -q "session_type" docs/superpowers/mcp-queries/learning.sql && echo "✓ Learning SQL created"
+grep -q "session_type" docs/learnloop/mcp-queries/learning.sql && echo "✓ Learning SQL created"
 ```
 
 ---
@@ -479,28 +479,28 @@ grep -q "session_type" docs/superpowers/mcp-queries/learning.sql && echo "✓ Le
 ```
 Create the remaining SQL files with placeholder structure:
 
-1. docs/superpowers/mcp-queries/review.sql:
+1. docs/learnloop/mcp-queries/review.sql:
 -- Review queue queries
 -- Due topics query (using fsrs.sql retrievability)
 -- Session start/end
 
-2. docs/superpowers/mcp-queries/practice.sql:
+2. docs/learnloop/mcp-queries/practice.sql:
 -- Practice problem queries
 -- Performance tracking
 -- Interleaved topic selection
 
-3. docs/superpowers/mcp-queries/research.sql:
+3. docs/learnloop/mcp-queries/research.sql:
 -- Source storage
 -- Claim triangulation
 -- Note registry links
 
-4. docs/superpowers/mcp-queries/streak.sql:
+4. docs/learnloop/mcp-queries/streak.sql:
 -- Activity tracking
 -- Streak increment
 -- Freeze usage
 -- Achievement unlock
 
-5. docs/superpowers/mcp-queries/backup.sql:
+5. docs/learnloop/mcp-queries/backup.sql:
 -- Backup creation
 -- Verification
 -- Restore operations
@@ -510,7 +510,7 @@ Create each with appropriate header comment and basic structure matching the pat
 
 **Verification:**
 ```bash
-ls -la docs/superpowers/mcp-queries/*.sql | wc -l | grep -q "8" && echo "✓ All SQL files created"
+ls -la docs/learnloop/mcp-queries/*.sql | wc -l | grep -q "8" && echo "✓ All SQL files created"
 ```
 
 ---
@@ -524,7 +524,7 @@ Add a new section to SKILL.md after the FSRS-6 Constants section:
 
 ## MCP Query Templates
 
-All data operations use SQLite MCP queries from `docs/superpowers/mcp-queries/`.
+All data operations use SQLite MCP queries from `docs/learnloop/mcp-queries/`.
 
 ### Usage Pattern
 
@@ -562,7 +562,7 @@ grep -q "MCP Query Templates" SKILL.md && echo "✓ SKILL.md updated with MCP se
 ```bash
 echo "=== SQL SYNTAX CHECK ==="
 
-for file in docs/superpowers/mcp-queries/*.sql; do
+for file in docs/learnloop/mcp-queries/*.sql; do
   echo "Checking $file..."
   # Basic syntax check (requires sqlite3)
   sqlite3 :memory: < "$file" 2>&1 | head -5 || echo "Note: $file may have parameterized queries"
@@ -575,7 +575,7 @@ echo "✓ SQL files validated"
 
 ```bash
 echo "=== DIRECTORY STRUCTURE ==="
-ls -la docs/superpowers/mcp-queries/
+ls -la docs/learnloop/mcp-queries/
 echo "✓ Structure verified"
 ```
 
@@ -583,9 +583,9 @@ echo "✓ Structure verified"
 
 ```bash
 echo "=== CONTENT VERIFICATION ==="
-grep -l "CREATE TABLE" docs/superpowers/mcp-queries/*.sql && echo "✓ Schema has tables"
-grep -l "retrievability" docs/superpowers/mcp-queries/*.sql && echo "✓ FSRS calculations present"
-grep -l "session" docs/superpowers/mcp-queries/*.sql && echo "✓ Session queries present"
+grep -l "CREATE TABLE" docs/learnloop/mcp-queries/*.sql && echo "✓ Schema has tables"
+grep -l "retrievability" docs/learnloop/mcp-queries/*.sql && echo "✓ FSRS calculations present"
+grep -l "session" docs/learnloop/mcp-queries/*.sql && echo "✓ Session queries present"
 ```
 
 ### SKILL.md Integration
@@ -603,7 +603,7 @@ grep -A5 "MCP Query Templates" SKILL.md && echo "✓ SKILL.md has MCP section"
 
 ```markdown
 Verify the following:
-- [ ] Directory structure: docs/superpowers/mcp-queries/ exists
+- [ ] Directory structure: docs/learnloop/mcp-queries/ exists
 - [ ] 8 SQL files created (schema, fsrs, learning, review, practice, research, streak, backup)
 - [ ] README.md documents query file purposes
 - [ ] schema.sql has all 8 tables with CHECK constraints
@@ -625,20 +625,20 @@ Status: [ ] I have verified the above items and approve this story.
 echo "=== ACCEPTANCE CRITERIA VERIFICATION ==="
 
 # 1. Directory exists
-test -d docs/superpowers/mcp-queries && echo "✓ [1/6] MCP queries directory exists"
+test -d docs/learnloop/mcp-queries && echo "✓ [1/6] MCP queries directory exists"
 
 # 2. 8 SQL files
-test $(ls docs/superpowers/mcp-queries/*.sql 2>/dev/null | wc -l) -eq 8 && echo "✓ [2/6] All 8 SQL files created"
+test $(ls docs/learnloop/mcp-queries/*.sql 2>/dev/null | wc -l) -eq 8 && echo "✓ [2/6] All 8 SQL files created"
 
 # 3. README exists
-test -f docs/superpowers/mcp-queries/README.md && echo "✓ [3/6] README exists"
+test -f docs/learnloop/mcp-queries/README.md && echo "✓ [3/6] README exists"
 
 # 4. Schema has core tables
-grep -q "goal_meta" docs/superpowers/mcp-queries/schema.sql && echo "✓ [4/6] Schema has goal_meta"
-grep -q "fsrs_state" docs/superpowers/mcp-queries/schema.sql && echo "✓ [5/6] Schema has fsrs_state"
+grep -q "goal_meta" docs/learnloop/mcp-queries/schema.sql && echo "✓ [4/6] Schema has goal_meta"
+grep -q "fsrs_state" docs/learnloop/mcp-queries/schema.sql && echo "✓ [5/6] Schema has fsrs_state"
 
 # 5. FSRS has retrievability
-grep -q "retrievability" docs/superpowers/mcp-queries/fsrs.sql && echo "✓ [6/6] FSRS calculations present"
+grep -q "retrievability" docs/learnloop/mcp-queries/fsrs.sql && echo "✓ [6/6] FSRS calculations present"
 
 # 6. SKILL.md references MCP
 grep -q "MCP Query Templates" SKILL.md && echo "✓ [7/7] SKILL.md has MCP section"
@@ -656,12 +656,12 @@ echo "=== ALL CRITERIA VERIFIED ==="
 ```bash
 echo "=== COMMITTING CHANGES ==="
 
-cd .superpowers/worktrees/MIT-001
+cd .superpowers/worktrees/LL-001
 
-git add docs/superpowers/mcp-queries/
+git add docs/learnloop/mcp-queries/
 git add SKILL.md
 
-git commit -m "feat(MIT-001): create SQLite MCP query templates
+git commit -m "feat(LL-001): create SQLite MCP query templates
 
 - Add 8 SQL files for all data operations
 - Schema with CHECK constraints for safety
@@ -671,7 +671,7 @@ git commit -m "feat(MIT-001): create SQLite MCP query templates
 - Backup operations
 - Update SKILL.md with MCP section
 
-Story: MIT-001
+Story: LL-001
 Impact: Foundation for Python-free architecture
 "
 ```
@@ -682,11 +682,11 @@ Impact: Foundation for Python-free architecture
 echo "=== MERGING WORKTREE ==="
 
 git checkout main
-git merge story/MIT-001 --no-ff -m "Merge story/MIT-001: SQLite MCP Query Templates"
+git merge story/LL-001 --no-ff -m "Merge story/LL-001: SQLite MCP Query Templates"
 
 # Cleanup worktree
-git worktree remove .superpowers/worktrees/MIT-001
-git branch -d story/MIT-001
+git worktree remove .superpowers/worktrees/LL-001
+git branch -d story/LL-001
 
 echo "✓ Worktree merged and cleaned up"
 ```
@@ -695,9 +695,9 @@ echo "✓ Worktree merged and cleaned up"
 
 ```bash
 # Create PASS checkpoint
-cat > .superpowers/checkpoints/MIT-001-PASS << 'EOF'
+cat > .superpowers/checkpoints/LL-001-PASS << 'EOF'
 {
-  "storyId": "MIT-001",
+  "storyId": "LL-001",
   "completedAt": "'$(date -Iseconds)'",
   "status": "passed",
   "acceptanceCriteria": [
@@ -713,10 +713,10 @@ cat > .superpowers/checkpoints/MIT-001-PASS << 'EOF'
 EOF
 
 # Update state file
-jq '.MIT-001.status = "passed" | .MIT-001.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-001.status = "passed" | .LL-001.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-echo "✓ State updated: MIT-001 passed"
+echo "✓ State updated: LL-001 passed"
 ```
 
 ---
@@ -727,50 +727,50 @@ echo "✓ State updated: MIT-001 passed"
 
 ```bash
 #!/bin/bash
-# Rollback script for MIT-001
+# Rollback script for LL-001
 
 set -e
 
-echo "Rolling back MIT-001..."
+echo "Rolling back LL-001..."
 
 # Restore git state
 git checkout main
 git reset --hard HEAD
 
 # Remove created files
-rm -rf docs/superpowers/mcp-queries/
+rm -rf docs/learnloop/mcp-queries/
 
 # Restore SKILL.md from checkpoint
-if [ -f .superpowers/checkpoints/MIT-001-START ]; then
-  REF=$(jq -r '.gitRef' .superpowers/checkpoints/MIT-001-START)
+if [ -f .superpowers/checkpoints/LL-001-START ]; then
+  REF=$(jq -r '.gitRef' .superpowers/checkpoints/LL-001-START)
   git checkout $REF -- SKILL.md
 fi
 
 # Remove worktree if exists
-git worktree remove .superpowers/worktrees/MIT-001 2>/dev/null || true
-git branch -D story/MIT-001 2>/dev/null || true
+git worktree remove .superpowers/worktrees/LL-001 2>/dev/null || true
+git branch -D story/LL-001 2>/dev/null || true
 
 # Update state
-jq '.MIT-001.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-001.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
 # Remove checkpoints
-rm -f .superpowers/checkpoints/MIT-001-*
+rm -f .superpowers/checkpoints/LL-001-*
 
-echo "Rollback complete. MIT-001 status: pending"
+echo "Rollback complete. LL-001 status: pending"
 ```
 
 ---
 
 ## NEXT STEPS
 
-After MIT-001 passes:
+After LL-001 passes:
 
-1. **Proceed to MIT-002:** Schema Initialization via MCP
+1. **Proceed to LL-002:** Schema Initialization via MCP
 2. **Test queries:** Execute schema.sql against test database
 3. **Update README.md:** Add MCP architecture section
 
 ---
 
-**END OF EXECUTION PROMPT FOR MIT-001**
+**END OF EXECUTION PROMPT FOR LL-001**
 
 **Copy everything above this line and paste into Claude session.**

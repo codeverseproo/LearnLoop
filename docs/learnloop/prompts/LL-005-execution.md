@@ -1,4 +1,4 @@
-# MIT-005: Learning Session Workflow
+# LL-005: Learning Session Workflow
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,13 +7,13 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-005
+ID: LL-005
 Title: Learning Session Workflow
 Phase: 2
 Effort: 3 hours
 Impact: Core learning functionality via pure MCP
-Dependencies: MIT-004 (Phase 1 Complete)
-Parallelizable with: MIT-006, MIT-007, MIT-008, MIT-009
+Dependencies: LL-004 (Phase 1 Complete)
+Parallelizable with: LL-006, LL-007, LL-008, LL-009
 ```
 
 ---
@@ -22,13 +22,13 @@ Parallelizable with: MIT-006, MIT-007, MIT-008, MIT-009
 
 ```bash
 set -e
-echo "=== PREFLIGHT CHECKS FOR MIT-005 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-005 ==="
 
-# 1. Phase 1 complete (MIT-004 passed)
-jq -e '.MIT-004.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: Phase 1 not complete"; exit 1; }
+# 1. Phase 1 complete (LL-004 passed)
+jq -e '.LL-004.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: Phase 1 not complete"; exit 1; }
 
 # 2. learning.sql exists
-test -f docs/superpowers/mcp-queries/learning.sql || { echo "FAIL: learning.sql not found"; exit 1; }
+test -f docs/learnloop/mcp-queries/learning.sql || { echo "FAIL: learning.sql not found"; exit 1; }
 
 echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ```
@@ -38,11 +38,11 @@ echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ## STATE INITIALIZATION
 
 ```bash
-cat > .superpowers/checkpoints/MIT-005-START << 'EOF'
-{"storyId": "MIT-005", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
+cat > .superpowers/checkpoints/LL-005-START << 'EOF'
+{"storyId": "LL-005", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
 EOF
 
-jq '.MIT-005 = {"status": "in-progress", "phase": 2, "title": "Learning Session Workflow", "startedAt": "'$(date -Iseconds)'", "dependencies": ["MIT-004"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-005 = {"status": "in-progress", "phase": 2, "title": "Learning Session Workflow", "startedAt": "'$(date -Iseconds)'", "dependencies": ["LL-004"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 ```
 
 ---
@@ -293,8 +293,8 @@ echo "=== ALL CRITERIA VERIFIED ==="
 ## CLEANUP & COMPLETION
 
 ```bash
-git add SKILL.md docs/superpowers/mcp-queries/learning.sql
-git commit -m "feat(MIT-005): learning session workflow
+git add SKILL.md docs/learnloop/mcp-queries/learning.sql
+git commit -m "feat(LL-005): learning session workflow
 
 - Complete learning_session workflow in SKILL.md
 - Topic creation via MCP
@@ -303,19 +303,19 @@ git commit -m "feat(MIT-005): learning session workflow
 - Mastery calculation
 - Streak increment
 
-Story: MIT-005
+Story: LL-005
 Phase: 2
-Dependencies: MIT-004
+Dependencies: LL-004
 "
 
-jq '.MIT-005.status = "passed" | .MIT-005.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-005.status = "passed" | .LL-005.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-cat > .superpowers/checkpoints/MIT-005-PASS << 'EOF'
-{"storyId": "MIT-005", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
+cat > .superpowers/checkpoints/LL-005-PASS << 'EOF'
+{"storyId": "LL-005", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
 EOF
 
-echo "✓ MIT-005 passed"
+echo "✓ LL-005 passed"
 ```
 
 ---
@@ -325,15 +325,15 @@ echo "✓ MIT-005 passed"
 ```bash
 #!/bin/bash
 set -e
-REF=$(jq -r '.gitRef' .superpowers/checkpoints/MIT-005-START)
+REF=$(jq -r '.gitRef' .superpowers/checkpoints/LL-005-START)
 git checkout $REF -- SKILL.md
-jq '.MIT-005.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
-rm -f .superpowers/checkpoints/MIT-005-*
+jq '.LL-005.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+rm -f .superpowers/checkpoints/LL-005-*
 echo "Rollback complete"
 ```
 
 ---
 
-**NEXT:** MIT-006 (can run in parallel)
+**NEXT:** LL-006 (can run in parallel)
 
-**END OF EXECUTION PROMPT FOR MIT-005**
+**END OF EXECUTION PROMPT FOR LL-005**

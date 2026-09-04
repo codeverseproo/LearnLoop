@@ -1,5 +1,5 @@
 -- Integration Tests: Interview System
--- Test File: docs/superpowers/tests/integration/test_interviews.sql
+-- Test File: docs/learnloop/tests/integration/test_interviews.sql
 -- Purpose: Verify schema migration, JSON storage, and enforcement logic
 
 -- ==============================================================================

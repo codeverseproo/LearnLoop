@@ -103,7 +103,7 @@ The skill shows:
 3. **Verify installation:**
    ```bash
    sqlite3 --version
-   ls docs/superpowers/mcp-queries/
+   ls docs/learnloop/mcp-queries/
    # Should show: schema.sql, fsrs.sql, learning.sql, etc.
    ```
 
@@ -244,7 +244,7 @@ Interview data stored in SQLite `goal_meta` table:
                         ▼
 ┌─────────────────────────────────────────────────────┐
 │                COLD (Obsidian Vault)                │
-│          ~/Obsidian/MIT-{goal-slug}/                │
+│          ~/Obsidian/LL-{goal-slug}/                │
 │      Notes, knowledge graph, long-term storage      │
 └─────────────────────────────────────────────────────┘
 ```
@@ -370,7 +370,7 @@ LearnLoop/
 ### Run SQL Tests
 
 ```bash
-cd docs/superpowers/tests
+cd docs/learnloop/tests
 ./run_tests.sh
 ```
 

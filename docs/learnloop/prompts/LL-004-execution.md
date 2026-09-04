@@ -1,4 +1,4 @@
-# MIT-004: Backup System
+# LL-004: Backup System
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,12 +7,12 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-004
+ID: LL-004
 Title: Backup System
 Phase: 1
 Effort: 2 hours
 Impact: Data safety for accidental losses
-Dependencies: MIT-003 (FSRS Calculations)
+Dependencies: LL-003 (FSRS Calculations)
 Parallelizable with: None
 ```
 
@@ -22,13 +22,13 @@ Parallelizable with: None
 
 ```bash
 set -e
-echo "=== PREFLIGHT CHECKS FOR MIT-004 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-004 ==="
 
-# 1. MIT-003 passed
-jq -e '.MIT-003.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: MIT-003 not passed"; exit 1; }
+# 1. LL-003 passed
+jq -e '.LL-003.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: LL-003 not passed"; exit 1; }
 
 # 2. Backup SQL exists
-test -f docs/superpowers/mcp-queries/backup.sql || { echo "FAIL: backup.sql not found"; exit 1; }
+test -f docs/learnloop/mcp-queries/backup.sql || { echo "FAIL: backup.sql not found"; exit 1; }
 
 echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ```
@@ -38,11 +38,11 @@ echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ## STATE INITIALIZATION
 
 ```bash
-cat > .superpowers/checkpoints/MIT-004-START << 'EOF'
-{"storyId": "MIT-004", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
+cat > .superpowers/checkpoints/LL-004-START << 'EOF'
+{"storyId": "LL-004", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
 EOF
 
-jq '.MIT-004 = {"status": "in-progress", "phase": 1, "title": "Backup System", "startedAt": "'$(date -Iseconds)'", "dependencies": ["MIT-003"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-004 = {"status": "in-progress", "phase": 1, "title": "Backup System", "startedAt": "'$(date -Iseconds)'", "dependencies": ["LL-003"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 ```
 
 ---
@@ -60,7 +60,7 @@ echo "Backup directory created at ~/.mit-learning/backups/"
 
 ### Step 2: Create Backup SQL
 
-Write to `docs/superpowers/mcp-queries/backup.sql`:
+Write to `docs/learnloop/mcp-queries/backup.sql`:
 
 ```sql
 -- ============================================
@@ -103,7 +103,7 @@ UNION ALL SELECT 'streak_state', COUNT(*) FROM streak_state;
 
 ### Step 3: Create Backup Script
 
-Create `docs/superpowers/scripts/backup.sh`:
+Create `docs/learnloop/scripts/backup.sh`:
 
 ```bash
 #!/bin/bash
@@ -149,7 +149,7 @@ echo "Backup complete. Old backups cleaned up."
 
 Make executable:
 ```bash
-chmod +x docs/superpowers/scripts/backup.sh
+chmod +x docs/learnloop/scripts/backup.sh
 ```
 
 ---
@@ -161,7 +161,7 @@ chmod +x docs/superpowers/scripts/backup.sh
 sqlite3 ~/.mit-learning/goals/test/memory.db "INSERT INTO topics (topic_id, name) VALUES ('T01-backup-test', 'Backup Test');"
 
 # Run backup
-./docs/superpowers/scripts/backup.sh test
+./docs/learnloop/scripts/backup.sh test
 
 # Verify backup
 ls -la ~/.mit-learning/backups/test_*.db
@@ -213,7 +213,7 @@ Backup before:
 ### Manual Backup
 
 ```bash
-./docs/superpowers/scripts/backup.sh <goal_id>
+./docs/learnloop/scripts/backup.sh <goal_id>
 ```
 
 ### Restore
@@ -230,7 +230,7 @@ sqlite3 ~/.mit-learning/goals/<goal_id>/memory.db "PRAGMA integrity_check;"
 
 Always backup:
 ```bash
-./docs/superpowers/scripts/backup.sh <goal_id>
+./docs/learnloop/scripts/backup.sh <goal_id>
 # Then proceed with migration
 ```
 ```
@@ -243,10 +243,10 @@ Always backup:
 echo "=== BACKUP VERIFICATION ==="
 
 # 1. Backup script exists
-test -f docs/superpowers/scripts/backup.sh && echo "✓ [1/5] Backup script created"
+test -f docs/learnloop/scripts/backup.sh && echo "✓ [1/5] Backup script created"
 
 # 2. Script executable
-test -x docs/superpowers/scripts/backup.sh && echo "✓ [2/5] Script executable"
+test -x docs/learnloop/scripts/backup.sh && echo "✓ [2/5] Script executable"
 
 # 3. Backup created
 ls ~/.mit-learning/backups/test_*.db >/dev/null 2>&1 && echo "✓ [3/5] Backup file exists"
@@ -285,7 +285,7 @@ Status: [ ] I have verified backup/restore works correctly.
 echo "=== ACCEPTANCE CRITERIA ==="
 
 # 1. Backup script exists and executable
-test -x docs/superpowers/scripts/backup.sh && echo "✓ [1/4] Backup script ready"
+test -x docs/learnloop/scripts/backup.sh && echo "✓ [1/4] Backup script ready"
 
 # 2. Test backup created
 ls ~/.mit-learning/backups/test_*.db >/dev/null && echo "✓ [2/4] Test backup exists"
@@ -304,27 +304,27 @@ echo "=== PHASE 1 COMPLETE ==="
 ## CLEANUP & COMPLETION
 
 ```bash
-git add docs/superpowers/mcp-queries/backup.sql docs/superpowers/scripts/backup.sh SKILL.md
-git commit -m "feat(MIT-004): backup system
+git add docs/learnloop/mcp-queries/backup.sql docs/learnloop/scripts/backup.sh SKILL.md
+git commit -m "feat(LL-004): backup system
 
 - Backup script for database safety
 - Integrity verification
 - Restore procedure documented
 - Automatic cleanup (keep last 10)
 
-Story: MIT-004
-Dependencies: MIT-003
+Story: LL-004
+Dependencies: LL-003
 Phase: 1 Complete
 "
 
-jq '.MIT-004.status = "passed" | .MIT-004.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-004.status = "passed" | .LL-004.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-cat > .superpowers/checkpoints/MIT-004-PASS << 'EOF'
-{"storyId": "MIT-004", "status": "passed", "completedAt": "'$(date -Iseconds)'", "phase": "1-complete"}
+cat > .superpowers/checkpoints/LL-004-PASS << 'EOF'
+{"storyId": "LL-004", "status": "passed", "completedAt": "'$(date -Iseconds)'", "phase": "1-complete"}
 EOF
 
-echo "✓ MIT-004 passed"
+echo "✓ LL-004 passed"
 echo "✓ PHASE 1 COMPLETE"
 ```
 
@@ -335,16 +335,16 @@ echo "✓ PHASE 1 COMPLETE"
 ```bash
 #!/bin/bash
 set -e
-REF=$(jq -r '.gitRef' .superpowers/checkpoints/MIT-004-START)
-git checkout $REF -- docs/superpowers/mcp-queries/backup.sql SKILL.md
-rm -rf docs/superpowers/scripts/backup.sh
-jq '.MIT-004.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
-rm -f .superpowers/checkpoints/MIT-004-*
+REF=$(jq -r '.gitRef' .superpowers/checkpoints/LL-004-START)
+git checkout $REF -- docs/learnloop/mcp-queries/backup.sql SKILL.md
+rm -rf docs/learnloop/scripts/backup.sh
+jq '.LL-004.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+rm -f .superpowers/checkpoints/LL-004-*
 echo "Rollback complete"
 ```
 
 ---
 
-**NEXT:** Proceed to Phase 2: Workflows (MIT-005)
+**NEXT:** Proceed to Phase 2: Workflows (LL-005)
 
-**END OF EXECUTION PROMPT FOR MIT-004**
+**END OF EXECUTION PROMPT FOR LL-004**

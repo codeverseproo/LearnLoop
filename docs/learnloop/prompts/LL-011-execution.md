@@ -1,4 +1,4 @@
-# MIT-011: Comprehensive Testing
+# LL-011: Comprehensive Testing
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,12 +7,12 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-011
+ID: LL-011
 Title: Comprehensive Testing
 Phase: 3
 Effort: 4 hours
 Impact: Confidence in all workflows
-Dependencies: MIT-010 (Error Handling)
+Dependencies: LL-010 (Error Handling)
 Parallelizable with: None
 ```
 
@@ -22,10 +22,10 @@ Parallelizable with: None
 
 ```bash
 set -e
-echo "=== PREFLIGHT CHECKS FOR MIT-011 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-011 ==="
 
-# 1. MIT-010 passed
-jq -e '.MIT-010.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: MIT-010 not passed"; exit 1; }
+# 1. LL-010 passed
+jq -e '.LL-010.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: LL-010 not passed"; exit 1; }
 
 echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ```
@@ -35,11 +35,11 @@ echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ## STATE INITIALIZATION
 
 ```bash
-cat > .superpowers/checkpoints/MIT-011-START << 'EOF'
-{"storyId": "MIT-011", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
+cat > .superpowers/checkpoints/LL-011-START << 'EOF'
+{"storyId": "LL-011", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
 EOF
 
-jq '.MIT-011 = {"status": "in-progress", "phase": 3, "title": "Comprehensive Testing", "startedAt": "'$(date -Iseconds)'", "dependencies": ["MIT-010"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-011 = {"status": "in-progress", "phase": 3, "title": "Comprehensive Testing", "startedAt": "'$(date -Iseconds)'", "dependencies": ["LL-010"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 ```
 
 ---
@@ -49,14 +49,14 @@ jq '.MIT-011 = {"status": "in-progress", "phase": 3, "title": "Comprehensive Tes
 ### Step 1: Create Test Directory Structure
 
 ```bash
-mkdir -p docs/superpowers/tests/{unit,integration,edge-cases,performance}
+mkdir -p docs/learnloop/tests/{unit,integration,edge-cases,performance}
 ```
 
 ---
 
 ### Step 2: Create Unit Tests for FSRS
 
-Create `docs/superpowers/tests/unit/test_fsrs.sql`:
+Create `docs/learnloop/tests/unit/test_fsrs.sql`:
 
 ```sql
 -- ============================================
@@ -127,7 +127,7 @@ SELECT 'Test 7: State transitions',
 
 ### Step 3: Create Integration Tests for Workflows
 
-Create `docs/superpowers/tests/integration/test_learning_workflow.sql`:
+Create `docs/learnloop/tests/integration/test_learning_workflow.sql`:
 
 ```sql
 -- ============================================
@@ -201,7 +201,7 @@ DELETE FROM fsrs_state WHERE topic_id = (SELECT id FROM topics WHERE topic_id = 
 
 ### Step 4: Create Edge Case Tests
 
-Create `docs/superpowers/tests/edge-cases/test_edge_cases.sql`:
+Create `docs/learnloop/tests/edge-cases/test_edge_cases.sql`:
 
 ```sql
 -- ============================================
@@ -261,7 +261,7 @@ DELETE FROM streak_state WHERE goal_id = 'edge_test';
 
 ### Step 5: Create Performance Benchmarks
 
-Create `docs/superpowers/tests/performance/benchmarks.sql`:
+Create `docs/learnloop/tests/performance/benchmarks.sql`:
 
 ```sql
 -- ============================================
@@ -311,7 +311,7 @@ WHERE goal_id = :goal_id;
 
 ### Step 6: Create Test Runner Script
 
-Create `docs/superpowers/tests/run_tests.sh`:
+Create `docs/learnloop/tests/run_tests.sh`:
 
 ```bash
 #!/bin/bash
@@ -320,7 +320,7 @@ Create `docs/superpowers/tests/run_tests.sh`:
 set -e
 
 DB="$HOME/.mit-learning/goals/test/memory.db"
-TEST_DIR="docs/superpowers/tests"
+TEST_DIR="docs/learnloop/tests"
 
 echo "=== MIT Learning Skill Test Suite ==="
 echo "Database: $DB"
@@ -390,7 +390,7 @@ fi
 
 Make executable:
 ```bash
-chmod +x docs/superpowers/tests/run_tests.sh
+chmod +x docs/learnloop/tests/run_tests.sh
 ```
 
 ---
@@ -401,16 +401,16 @@ chmod +x docs/superpowers/tests/run_tests.sh
 echo "=== TEST SUITE VERIFICATION ==="
 
 # 1. Test files exist
-test -d docs/superpowers/tests/unit && echo "✓ [1/5] Unit test dir exists"
-test -d docs/superpowers/tests/integration && echo "✓ [2/5] Integration test dir exists"
-test -d docs/superpowers/tests/edge-cases && echo "✓ [3/5] Edge case test dir exists"
-test -d docs/superpowers/tests/performance && echo "✓ [4/5] Performance test dir exists"
+test -d docs/learnloop/tests/unit && echo "✓ [1/5] Unit test dir exists"
+test -d docs/learnloop/tests/integration && echo "✓ [2/5] Integration test dir exists"
+test -d docs/learnloop/tests/edge-cases && echo "✓ [3/5] Edge case test dir exists"
+test -d docs/learnloop/tests/performance && echo "✓ [4/5] Performance test dir exists"
 
 # 2. Test runner executable
-test -x docs/superpowers/tests/run_tests.sh && echo "✓ [5/5] Test runner ready"
+test -x docs/learnloop/tests/run_tests.sh && echo "✓ [5/5] Test runner ready"
 
 # 3. Run tests
-./docs/superpowers/tests/run_tests.sh || echo "Tests completed"
+./docs/learnloop/tests/run_tests.sh || echo "Tests completed"
 ```
 
 ---
@@ -437,10 +437,10 @@ Status: [ ] I have verified the test suite works correctly.
 ```bash
 echo "=== ACCEPTANCE CRITERIA ==="
 
-test -f docs/superpowers/tests/unit/test_fsrs.sql && echo "✓ [1/4] FSRS unit tests exist"
-test -f docs/superpowers/tests/integration/test_learning_workflow.sql && echo "✓ [2/4] Integration tests exist"
-test -f docs/superpowers/tests/edge-cases/test_edge_cases.sql && echo "✓ [3/4] Edge case tests exist"
-test -x docs/superpowers/tests/run_tests.sh && echo "✓ [4/4] Test runner executable"
+test -f docs/learnloop/tests/unit/test_fsrs.sql && echo "✓ [1/4] FSRS unit tests exist"
+test -f docs/learnloop/tests/integration/test_learning_workflow.sql && echo "✓ [2/4] Integration tests exist"
+test -f docs/learnloop/tests/edge-cases/test_edge_cases.sql && echo "✓ [3/4] Edge case tests exist"
+test -x docs/learnloop/tests/run_tests.sh && echo "✓ [4/4] Test runner executable"
 
 echo "=== ALL CRITERIA VERIFIED ==="
 ```
@@ -450,8 +450,8 @@ echo "=== ALL CRITERIA VERIFIED ==="
 ## CLEANUP & COMPLETION
 
 ```bash
-git add docs/superpowers/tests/
-git commit -m "feat(MIT-011): comprehensive testing
+git add docs/learnloop/tests/
+git commit -m "feat(LL-011): comprehensive testing
 
 - Unit tests for FSRS calculations
 - Integration tests for all workflows
@@ -459,19 +459,19 @@ git commit -m "feat(MIT-011): comprehensive testing
 - Performance benchmarks
 - Test runner script
 
-Story: MIT-011
+Story: LL-011
 Phase: 3
-Dependencies: MIT-010
+Dependencies: LL-010
 "
 
-jq '.MIT-011.status = "passed" | .MIT-011.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-011.status = "passed" | .LL-011.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-cat > .superpowers/checkpoints/MIT-011-PASS << 'EOF'
-{"storyId": "MIT-011", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
+cat > .superpowers/checkpoints/LL-011-PASS << 'EOF'
+{"storyId": "LL-011", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
 EOF
 
-echo "✓ MIT-011 passed"
+echo "✓ LL-011 passed"
 ```
 
 ---
@@ -481,14 +481,14 @@ echo "✓ MIT-011 passed"
 ```bash
 #!/bin/bash
 set -e
-rm -rf docs/superpowers/tests/
-jq '.MIT-011.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
-rm -f .superpowers/checkpoints/MIT-011-*
+rm -rf docs/learnloop/tests/
+jq '.LL-011.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+rm -f .superpowers/checkpoints/LL-011-*
 echo "Rollback complete"
 ```
 
 ---
 
-**NEXT:** Proceed to MIT-012: Python Deprecation (FINAL)
+**NEXT:** Proceed to LL-012: Python Deprecation (FINAL)
 
-**END OF EXECUTION PROMPT FOR MIT-011**
+**END OF EXECUTION PROMPT FOR LL-011**

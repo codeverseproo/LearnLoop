@@ -1,4 +1,4 @@
-# MIT-008: Research Workflow
+# LL-008: Research Workflow
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,13 +7,13 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-008
+ID: LL-008
 Title: Research Workflow
 Phase: 2
 Effort: 4 hours
 Impact: Research compilation saved to SQLite
-Dependencies: MIT-004 (Phase 1 Complete)
-Parallelizable with: MIT-005, MIT-006, MIT-007, MIT-009
+Dependencies: LL-004 (Phase 1 Complete)
+Parallelizable with: LL-005, LL-006, LL-007, LL-009
 ```
 
 ---
@@ -22,13 +22,13 @@ Parallelizable with: MIT-005, MIT-006, MIT-007, MIT-009
 
 ```bash
 set -e
-echo "=== PREFLIGHT CHECKS FOR MIT-008 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-008 ==="
 
 # 1. Phase 1 complete
-jq -e '.MIT-004.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: Phase 1 not complete"; exit 1; }
+jq -e '.LL-004.status == "passed"' .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: Phase 1 not complete"; exit 1; }
 
 # 2. research.sql exists
-test -f docs/superpowers/mcp-queries/research.sql || { echo "FAIL: research.sql not found"; exit 1; }
+test -f docs/learnloop/mcp-queries/research.sql || { echo "FAIL: research.sql not found"; exit 1; }
 
 echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ```
@@ -38,11 +38,11 @@ echo "✓ ALL PREFLIGHT CHECKS PASSED"
 ## STATE INITIALIZATION
 
 ```bash
-cat > .superpowers/checkpoints/MIT-008-START << 'EOF'
-{"storyId": "MIT-008", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
+cat > .superpowers/checkpoints/LL-008-START << 'EOF'
+{"storyId": "LL-008", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
 EOF
 
-jq '.MIT-008 = {"status": "in-progress", "phase": 2, "title": "Research Workflow", "startedAt": "'$(date -Iseconds)'", "dependencies": ["MIT-004"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-008 = {"status": "in-progress", "phase": 2, "title": "Research Workflow", "startedAt": "'$(date -Iseconds)'", "dependencies": ["LL-004"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 ```
 
 ---
@@ -321,8 +321,8 @@ echo "=== ALL CRITERIA VERIFIED ==="
 ## CLEANUP & COMPLETION
 
 ```bash
-git add SKILL.md docs/superpowers/mcp-queries/research.sql
-git commit -m "feat(MIT-008): research workflow
+git add SKILL.md docs/learnloop/mcp-queries/research.sql
+git commit -m "feat(LL-008): research workflow
 
 - research workflow with layered approach
 - Source storage in SQLite
@@ -330,19 +330,19 @@ git commit -m "feat(MIT-008): research workflow
 - Confidence calculation
 - Credibility scoring
 
-Story: MIT-008
+Story: LL-008
 Phase: 2
-Dependencies: MIT-004
+Dependencies: LL-004
 "
 
-jq '.MIT-008.status = "passed" | .MIT-008.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-008.status = "passed" | .LL-008.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-cat > .superpowers/checkpoints/MIT-008-PASS << 'EOF'
-{"storyId": "MIT-008", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
+cat > .superpowers/checkpoints/LL-008-PASS << 'EOF'
+{"storyId": "LL-008", "status": "passed", "completedAt": "'$(date -Iseconds)'"}
 EOF
 
-echo "✓ MIT-008 passed"
+echo "✓ LL-008 passed"
 ```
 
 ---
@@ -352,10 +352,10 @@ echo "✓ MIT-008 passed"
 ```bash
 #!/bin/bash
 set -e
-REF=$(jq -r '.gitRef' .superpowers/checkpoints/MIT-008-START)
-git checkout $REF -- SKILL.md docs/superpowers/mcp-queries/research.sql
-jq '.MIT-008.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
-rm -f .superpowers/checkpoints/MIT-008-*
+REF=$(jq -r '.gitRef' .superpowers/checkpoints/LL-008-START)
+git checkout $REF -- SKILL.md docs/learnloop/mcp-queries/research.sql
+jq '.LL-008.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+rm -f .superpowers/checkpoints/LL-008-*
 echo "Rollback complete"
 ```
 
@@ -363,4 +363,4 @@ echo "Rollback complete"
 
 **NEXT:** Continue Phase 2 workflows
 
-**END OF EXECUTION PROMPT FOR MIT-008**
+**END OF EXECUTION PROMPT FOR LL-008**

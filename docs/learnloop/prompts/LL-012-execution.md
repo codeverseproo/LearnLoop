@@ -1,4 +1,4 @@
-# MIT-012: Python Deprecation
+# LL-012: Python Deprecation
 
 **Execution Prompt — Copy and paste into Claude session**
 
@@ -7,12 +7,12 @@
 ## STORY METADATA
 
 ```yaml
-ID: MIT-012
+ID: LL-012
 Title: Python Deprecation
 Phase: 3
 Effort: 2 hours
 Impact: Zero Python dependency
-Dependencies: MIT-011 (Testing)
+Dependencies: LL-011 (Testing)
 Parallelizable with: None (Final story)
 ```
 
@@ -22,10 +22,10 @@ Parallelizable with: None (Final story)
 
 ```bash
 set -e
-echo "=== PREFLIGHT CHECKS FOR MIT-012 ==="
+echo "=== PREFLIGHT CHECKS FOR LL-012 ==="
 
 # 1. All prior stories passed
-for story in MIT-001 MIT-002 MIT-003 MIT-004 MIT-005 MIT-006 MIT-007 MIT-008 MIT-009 MIT-010 MIT-011; do
+for story in LL-001 LL-002 LL-003 LL-004 LL-005 LL-006 LL-007 LL-008 LL-009 LL-010 LL-011; do
     jq -e ".${story}.status == \"passed\"" .superpowers/state/story-progress.json > /dev/null || { echo "FAIL: ${story} not passed"; exit 1; }
 done
 
@@ -38,11 +38,11 @@ echo "✓ READY FOR FINAL STORY"
 ## STATE INITIALIZATION
 
 ```bash
-cat > .superpowers/checkpoints/MIT-012-START << 'EOF'
-{"storyId": "MIT-012", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
+cat > .superpowers/checkpoints/LL-012-START << 'EOF'
+{"storyId": "LL-012", "createdAt": "'$(date -Iseconds)'", "gitRef": "'$(git rev-parse HEAD)'"}
 EOF
 
-jq '.MIT-012 = {"status": "in-progress", "phase": 3, "title": "Python Deprecation", "startedAt": "'$(date -Iseconds)'", "dependencies": ["MIT-011"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-012 = {"status": "in-progress", "phase": 3, "title": "Python Deprecation", "startedAt": "'$(date -Iseconds)'", "dependencies": ["LL-011"]}' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 ```
 
 ---
@@ -101,7 +101,7 @@ python scripts/<script>.py <args>
 
 ## Documentation
 
-See `docs/superpowers/mcp-queries/` for current implementation.
+See `docs/learnloop/mcp-queries/` for current implementation.
 EOF
 ```
 
@@ -154,7 +154,7 @@ A Claude Code skill for mastery-based learning with FSRS-6 spaced repetition.
 ```
 MIT Learning Skill/
 ├── SKILL.md                        # Main skill with 12 workflows
-├── docs/superpowers/
+├── docs/learnloop/
 │   ├── mcp-queries/               # SQL query templates
 │   │   ├── schema.sql             # Database schema
 │   │   ├── fsrs.sql               # FSRS-6 calculations
@@ -224,15 +224,15 @@ M = 1 - exp(-0.5 * S / D)
 ## Testing
 
 ```bash
-./docs/superpowers/tests/run_tests.sh
+./docs/learnloop/tests/run_tests.sh
 ```
 
 ## Documentation
 
 - `docs/FSRS-6-ALGORITHM.md` — FSRS formulas
 - `docs/ARCHITECTURE.md` — System design
-- `docs/superpowers/specs/` — Design specs
-- `docs/superpowers/architecture/` — Execution architecture
+- `docs/learnloop/specs/` — Design specs
+- `docs/learnloop/architecture/` — Execution architecture
 
 ## License
 
@@ -266,7 +266,7 @@ grep -c "python " SKILL.md || echo "No python commands in SKILL.md"
 # Expected: 0
 
 # 4. Test suite works
-./docs/superpowers/tests/run_tests.sh && echo "Tests pass without Python"
+./docs/learnloop/tests/run_tests.sh && echo "Tests pass without Python"
 
 echo "=== VERIFICATION COMPLETE ==="
 ```
@@ -304,7 +304,7 @@ test -d scripts/_deprecated && echo "✓ [2/5] Python archived"
 grep -q "No Python required" README.md && echo "✓ [3/5] README updated"
 
 # 4. Tests pass
-./docs/superpowers/tests/run_tests.sh >/dev/null 2>&1 && echo "✓ [4/5] Tests pass"
+./docs/learnloop/tests/run_tests.sh >/dev/null 2>&1 && echo "✓ [4/5] Tests pass"
 
 # 5. SKILL.md has MCP queries
 grep -q "mcp__sqlite__query" SKILL.md && echo "✓ [5/5] SKILL.md uses MCP"
@@ -360,7 +360,7 @@ echo "=== PROJECT COMPLETE ==="
 
 ```bash
 git add -A
-git commit -m "feat(MIT-012): Python deprecation - PROJECT COMPLETE
+git commit -m "feat(LL-012): Python deprecation - PROJECT COMPLETE
 
 - Archived all Python scripts to scripts/_deprecated/
 - Removed Python dependencies
@@ -368,7 +368,7 @@ git commit -m "feat(MIT-012): Python deprecation - PROJECT COMPLETE
 - Zero Python required for operation
 - All 12 stories complete
 
-Story: MIT-012
+Story: LL-012
 Phase: 3 Final
 Project: COMPLETE
 
@@ -387,12 +387,12 @@ Architecture:
 Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>
 "
 
-jq '.MIT-012.status = "passed" | .MIT-012.completedAt = "'$(date -Iseconds)'"' \
+jq '.LL-012.status = "passed" | .LL-012.completedAt = "'$(date -Iseconds)'"' \
   .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-cat > .superpowers/checkpoints/MIT-012-PASS << 'EOF'
+cat > .superpowers/checkpoints/LL-012-PASS << 'EOF'
 {
-  "storyId": "MIT-012",
+  "storyId": "LL-012",
   "status": "passed",
   "completedAt": "'$(date -Iseconds)'",
   "project": "COMPLETE",
@@ -419,7 +419,7 @@ echo ""
 #!/bin/bash
 set -e
 
-echo "Rolling back MIT-012..."
+echo "Rolling back LL-012..."
 
 # Restore Python scripts
 if [ -d scripts/_deprecated ]; then
@@ -432,13 +432,13 @@ if [ -f scripts/_deprecated/requirements.txt ]; then
 fi
 
 # Restore README
-REF=$(jq -r '.gitRef' .superpowers/checkpoints/MIT-012-START)
+REF=$(jq -r '.gitRef' .superpowers/checkpoints/LL-012-START)
 git checkout $REF -- README.md
 
 # Update state
-jq '.MIT-012.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
+jq '.LL-012.status = "pending"' .superpowers/state/story-progress.json > tmp.json && mv tmp.json .superpowers/state/story-progress.json
 
-rm -f .superpowers/checkpoints/MIT-012-*
+rm -f .superpowers/checkpoints/LL-012-*
 echo "Rollback complete"
 ```
 
@@ -450,12 +450,12 @@ echo "Rollback complete"
 
 | Phase | Stories | Status |
 |-------|---------|--------|
-| 1: Foundation | MIT-001 through MIT-004 | ✓ Passed |
-| 2: Workflows | MIT-005 through MIT-009 | ✓ Passed |
-| 3: Polish | MIT-010 through MIT-012 | ✓ Passed |
+| 1: Foundation | LL-001 through LL-004 | ✓ Passed |
+| 2: Workflows | LL-005 through LL-009 | ✓ Passed |
+| 3: Polish | LL-010 through LL-012 | ✓ Passed |
 
 **Architecture Delivered:**
-- 8 SQL query files (`docs/superpowers/mcp-queries/`)
+- 8 SQL query files (`docs/learnloop/mcp-queries/`)
 - 12 learning workflows in SKILL.md
 - Complete test suite
 - Pure skill + SQLite MCP
@@ -464,12 +464,12 @@ echo "Rollback complete"
 **Files Changed:**
 - SKILL.md (workflows, FSRS, error handling)
 - README.md (pure-skill architecture)
-- docs/superpowers/mcp-queries/ (8 SQL files)
-- docs/superpowers/tests/ (test suite)
+- docs/learnloop/mcp-queries/ (8 SQL files)
+- docs/learnloop/tests/ (test suite)
 - scripts/_deprecated/ (archived Python)
 
 ---
 
 **PROJECT COMPLETE. Ready for production use.**
 
-**END OF EXECUTION PROMPT FOR MIT-012**
+**END OF EXECUTION PROMPT FOR LL-012**
