@@ -9,7 +9,11 @@ CREATE TABLE IF NOT EXISTS goal_meta (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     vault_path TEXT,
     total_topics INTEGER DEFAULT 0,
-    mastered_topics INTEGER DEFAULT 0
+    mastered_topics INTEGER DEFAULT 0,
+    baseline TEXT,
+    timeline TEXT,
+    daily_availability TEXT,
+    interview_complete INTEGER DEFAULT 0
 );
 
 -- Topics with mastery tracking
@@ -151,3 +155,42 @@ CREATE TABLE IF NOT EXISTS research_metadata (
 -- Indexes for research_metadata
 CREATE INDEX IF NOT EXISTS idx_research_goal ON research_metadata(goal_id);
 CREATE INDEX IF NOT EXISTS idx_research_agent ON research_metadata(agent_type);
+
+-- ============================================
+-- EXECUTION STATE TRACKING (Two-Tier Agent)
+-- ============================================
+
+-- Execution state for agent spawns and phase tracking
+CREATE TABLE IF NOT EXISTS execution_state (
+    goal_id TEXT NOT NULL,
+    phase TEXT NOT NULL,
+    wave INTEGER DEFAULT 0,
+    agent_spawns INTEGER DEFAULT 0,
+    agent_type TEXT,
+    attempts INTEGER DEFAULT 0,
+    max_attempts INTEGER DEFAULT 3,
+    last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    last_failure_reason TEXT,
+    phase_complete INTEGER DEFAULT 0,
+    PRIMARY KEY (goal_id, phase, wave),
+    FOREIGN KEY (goal_id) REFERENCES goal_meta(goal_id)
+);
+
+-- Phase telemetry for observability
+CREATE TABLE IF NOT EXISTS phase_telemetry (
+    goal_id TEXT NOT NULL,
+    phase TEXT NOT NULL,
+    wave INTEGER,
+    agent_type TEXT,
+    started_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    completed_at TIMESTAMP,
+    duration_seconds INTEGER,
+    success INTEGER DEFAULT 1,
+    error_message TEXT,
+    PRIMARY KEY (goal_id, phase, started_at)
+);
+
+-- Indexes for execution tracking
+CREATE INDEX IF NOT EXISTS idx_execution_goal ON execution_state(goal_id);
+CREATE INDEX IF NOT EXISTS idx_execution_phase ON execution_state(phase);
+CREATE INDEX IF NOT EXISTS idx_telemetry_goal ON phase_telemetry(goal_id);
