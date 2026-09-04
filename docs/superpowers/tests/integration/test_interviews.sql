@@ -6,7 +6,7 @@
 -- SETUP: Create test database and apply migration
 -- ==============================================================================
 -- Run with: sqlite3 test_interviews.db < test_interviews.sql
--- Or against existing: sqlite3 ~/.mit-learning/goals/{goal_id}/memory.db < test_interviews.sql
+-- Or against existing: sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < test_interviews.sql
 
 -- ==============================================================================
 -- TEST 1: Schema migration applied

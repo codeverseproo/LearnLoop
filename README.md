@@ -1,4 +1,4 @@
-# MIT Learning Skill
+# LearnLoop
 
 **Intent-driven learning skill with FSRS-6 spaced repetition, research-based syllabus generation, and zero Python dependency.**
 
@@ -23,7 +23,7 @@
 
 ## What This Skill Does
 
-MIT Learning Skill helps you:
+LearnLoop helps you:
 - **Create personalized learning plans** for any goal (exams, skills, degrees, topics) using layered research from academic, official, and expert sources
 - **Study effectively** with FSRS-6 spaced repetition (20-30% fewer reviews than traditional SRS)
 - **Track progress** across multiple learning goals with visual dashboards
@@ -93,12 +93,12 @@ The skill shows:
 
 1. **Copy the skill:**
    ```bash
-   cp -r MIT/ ~/.claude/skills/mit-learning/
+   cp -r LearnLoop/ ~/.claude/skills/learnloop/
    ```
 
 2. **First goal creation auto-initializes database:**
    Say: "I want to learn TypeScript fundamentals"
-   The skill automatically creates `~/.mit-learning/goals/typescript-fundamentals/memory.db`
+   The skill automatically creates `~/.learnloop/goals/typescript-fundamentals/memory.db`
 
 3. **Verify installation:**
    ```bash
@@ -237,7 +237,7 @@ Interview data stored in SQLite `goal_meta` table:
                         ▼
 ┌─────────────────────────────────────────────────────┐
 │                   WARM (SQLite)                     │
-│      ~/.mit-learning/goals/{goal_id}/memory.db      │
+│      ~/.learnloop/goals/{goal_id}/memory.db      │
 │      Persistent state, FSRS tracking, sessions      │
 └───────────────────────┬─────────────────────────────┘
                         │
@@ -335,7 +335,7 @@ Range: 0.0 to 1.0
 ## File Structure
 
 ```
-MIT/
+LearnLoop/
 ├── SKILL.md                    # Main skill instructions
 ├── README.md                   # This file
 └── docs/

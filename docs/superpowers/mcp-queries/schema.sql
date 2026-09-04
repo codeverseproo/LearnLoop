@@ -1,5 +1,5 @@
 -- ============================================
--- MIT Learning Skill - Database Schema
+-- LearnLoop - Database Schema
 -- ============================================
 
 -- Goal metadata

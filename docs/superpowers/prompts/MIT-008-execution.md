@@ -267,16 +267,16 @@ Expected: confidence ≈ 0.9, source_count = 3
 echo "=== RESEARCH WORKFLOW VERIFICATION ==="
 
 # 1. Sources stored
-sqlite3 ~/.mit-learning/goals/test/memory.db "SELECT COUNT(*) FROM research_sources WHERE topic_id=(SELECT id FROM topics WHERE topic_id='T10-research-test');" | grep -q "3" && echo "✓ [1/5] Sources stored"
+sqlite3 ~/.learnloop/goals/test/memory.db "SELECT COUNT(*) FROM research_sources WHERE topic_id=(SELECT id FROM topics WHERE topic_id='T10-research-test');" | grep -q "3" && echo "✓ [1/5] Sources stored"
 
 # 2. Credibility scored
-sqlite3 ~/.mit-learning/goals/test/memory.db "SELECT AVG(credibility_score) FROM research_sources;" | grep -q "0\.[89]" && echo "✓ [2/5] Credibility calculated"
+sqlite3 ~/.learnloop/goals/test/memory.db "SELECT AVG(credibility_score) FROM research_sources;" | grep -q "0\.[89]" && echo "✓ [2/5] Credibility calculated"
 
 # 3. Claims created
-sqlite3 ~/.mit-learning/goals/test/memory.db "SELECT COUNT(*) FROM research_claims;" | grep -q "1" && echo "✓ [3/5] Claims created"
+sqlite3 ~/.learnloop/goals/test/memory.db "SELECT COUNT(*) FROM research_claims;" | grep -q "1" && echo "✓ [3/5] Claims created"
 
 # 4. Triangulation works
-sqlite3 ~/.mit-learning/goals/test/memory.db "SELECT source_count FROM research_claims WHERE claim_text LIKE '%Transformer%';" | grep -q "3" && echo "✓ [4/5] Triangulation works"
+sqlite3 ~/.learnloop/goals/test/memory.db "SELECT source_count FROM research_claims WHERE claim_text LIKE '%Transformer%';" | grep -q "3" && echo "✓ [4/5] Triangulation works"
 
 # 5. SKILL.md updated
 grep -q "Workflow: research" SKILL.md && echo "✓ [5/5] SKILL.md documented"
@@ -308,9 +308,9 @@ Status: [ ] I have verified research workflow works with triangulation.
 ```bash
 echo "=== ACCEPTANCE CRITERIA ==="
 
-sqlite3 ~/.mit-learning/goals/test/memory.db "SELECT COUNT(*) FROM research_sources;" | grep -q "." && echo "✓ [1/4] Sources table working"
-sqlite3 ~/.mit-learning/goals/test/memory.db "SELECT COUNT(*) FROM research_claims WHERE source_count >= 3;" | grep -q "." && echo "✓ [2/4] Claims triangulated"
-sqlite3 ~/.mit-learning/goals/test/memory.db "SELECT confidence_score FROM research_claims WHERE source_count >= 3;" | grep -q "0\.[789]" && echo "✓ [3/4] High confidence for 3+ sources"
+sqlite3 ~/.learnloop/goals/test/memory.db "SELECT COUNT(*) FROM research_sources;" | grep -q "." && echo "✓ [1/4] Sources table working"
+sqlite3 ~/.learnloop/goals/test/memory.db "SELECT COUNT(*) FROM research_claims WHERE source_count >= 3;" | grep -q "." && echo "✓ [2/4] Claims triangulated"
+sqlite3 ~/.learnloop/goals/test/memory.db "SELECT confidence_score FROM research_claims WHERE source_count >= 3;" | grep -q "0\.[789]" && echo "✓ [3/4] High confidence for 3+ sources"
 grep -q "Claim Triangulation Rules" SKILL.md && echo "✓ [4/4] SKILL.md has triangulation rules"
 
 echo "=== ALL CRITERIA VERIFIED ==="

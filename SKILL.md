@@ -1,9 +1,9 @@
 ---
-name: mit-learning
+name: learnloop
 description: Intent-driven learning skill for personalized education with comprehensive research capabilities. Triggers when user wants to learn topics, prepare for exams, practice skills, conduct research, or track learning progress. Compiles layered research (Academic + Official → Broad Web → Curated) into single-source summaries. Adapts to user's goals, timeline, and baseline. Use this skill whenever the user mentions learning, studying, reviewing, exam prep, skill acquisition, spaced repetition, flashcards, mastery tracking, or research compilation.
 ---
 
-# MIT Learning Skill
+# LearnLoop
 
 Intent-driven learning system with FSRS-6 spaced repetition, streak mechanics, and Obsidian integration.
 
@@ -29,7 +29,7 @@ Intent-driven learning system with FSRS-6 spaced repetition, streak mechanics, a
 | Tier | Storage | Latency | Duration |
 |------|---------|---------|----------|
 | **HOT** | Session context (RAM) | 0ms | Session |
-| **WARM** | SQLite (`~/.mit-learning/goals/{goal_id}/memory.db`) | 1-5ms | Permanent |
+| **WARM** | SQLite (`~/.learnloop/goals/{goal_id}/memory.db`) | 1-5ms | Permanent |
 | **COLD** | Obsidian vault (`~/Obsidian/MIT-{goal-slug}/`) | 10-50ms | Permanent |
 
 ---
@@ -48,12 +48,12 @@ On `syllabus_generation` workflow trigger:
    - Example: "AWS Solutions Architect" → `aws-solutions-architect`
 
 2. **Check database exists:**
-   - Path: `~/.mit-learning/goals/{goal_id}/memory.db`
+   - Path: `~/.learnloop/goals/{goal_id}/memory.db`
 
 3. **If not exists, initialize:**
    ```bash
-   mkdir -p ~/.mit-learning/goals/{goal_id}
-   sqlite3 ~/.mit-learning/goals/{goal_id}/memory.db < docs/superpowers/mcp-queries/schema.sql
+   mkdir -p ~/.learnloop/goals/{goal_id}
+   sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/superpowers/mcp-queries/schema.sql
    ```
 
 4. **Verify initialization:**
@@ -65,9 +65,9 @@ On `syllabus_generation` workflow trigger:
 
 | Path | Purpose |
 |------|---------|
-| `~/.mit-learning/` | Base directory |
-| `~/.mit-learning/goals/{goal_id}/memory.db` | Per-goal SQLite |
-| `~/.mit-learning/backups/` | Backup storage |
+| `~/.learnloop/` | Base directory |
+| `~/.learnloop/goals/{goal_id}/memory.db` | Per-goal SQLite |
+| `~/.learnloop/backups/` | Backup storage |
 
 **Note:** Database initialization runs automatically on every new goal. No manual setup required.
 
@@ -167,7 +167,7 @@ Create research-based learning plan with hidden topic detection.
 
 #### Step 2: Database Initialization
 
-See §1.5 - Auto-initialize `~/.mit-learning/goals/{goal_id}/memory.db`
+See §1.5 - Auto-initialize `~/.learnloop/goals/{goal_id}/memory.db`
 
 #### Step 3: Launch Discovery Agents (Parallel)
 
@@ -707,10 +707,10 @@ State 3 (Relearning) → State 3          [Performance < 0.6] (stay)
 
 ```bash
 # Manual backup
-cp ~/.mit-learning/goals/{goal_id}/memory.db ~/.mit-learning/backups/{goal_id}_$(date +%Y%m%d).db
+cp ~/.learnloop/goals/{goal_id}/memory.db ~/.learnloop/backups/{goal_id}_$(date +%Y%m%d).db
 
 # Automatic daily backup (cron)
-0 0 * * * cp ~/.mit-learning/goals/*/memory.db ~/.mit-learning/backups/$(date +\%Y\%m\%d)/
+0 0 * * * cp ~/.learnloop/goals/*/memory.db ~/.learnloop/backups/$(date +\%Y\%m\%d)/
 ```
 
 ### Verification
@@ -723,7 +723,7 @@ SELECT 'topics' AS tbl, COUNT(*) FROM topics;
 ### Restore
 
 ```bash
-cp ~/.mit-learning/backups/{backup_file}.db ~/.mit-learning/goals/{goal_id}/memory.db
+cp ~/.learnloop/backups/{backup_file}.db ~/.learnloop/goals/{goal_id}/memory.db
 ```
 
 ---
