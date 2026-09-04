@@ -13,7 +13,15 @@ CREATE TABLE IF NOT EXISTS goal_meta (
     baseline TEXT,
     timeline TEXT,
     daily_availability TEXT,
-    interview_complete INTEGER DEFAULT 0
+    interview_complete INTEGER DEFAULT 0,
+    -- Budget configuration from interview
+    agent_budget INTEGER DEFAULT -1,
+    budget_enforcement TEXT DEFAULT 'warning' CHECK(budget_enforcement IN ('warning', 'hard_limit')),
+    goal_json TEXT,
+    availability_json TEXT,
+    learning_style_json TEXT,
+    goal_profile_json TEXT,
+    onboarding_complete INTEGER DEFAULT 0
 );
 
 -- Topics with mastery tracking
@@ -172,6 +180,10 @@ CREATE TABLE IF NOT EXISTS execution_state (
     last_attempt TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     last_failure_reason TEXT,
     phase_complete INTEGER DEFAULT 0,
+    repair_cycles INTEGER DEFAULT 0,
+    user_budget INTEGER DEFAULT -1,
+    budget_enforcement TEXT DEFAULT 'warning',
+    error_code TEXT,
     PRIMARY KEY (goal_id, phase, wave),
     FOREIGN KEY (goal_id) REFERENCES goal_meta(goal_id)
 );
@@ -187,8 +199,26 @@ CREATE TABLE IF NOT EXISTS phase_telemetry (
     duration_seconds INTEGER,
     success INTEGER DEFAULT 1,
     error_message TEXT,
+    error_code TEXT,
+    gate_result TEXT CHECK(gate_result IN ('PASS', 'FAIL', 'SKIP')),
     PRIMARY KEY (goal_id, phase, started_at)
 );
+
+-- Critic verdict storage
+CREATE TABLE IF NOT EXISTS critic_verdict (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    goal_id TEXT NOT NULL,
+    verdict TEXT NOT NULL CHECK(verdict IN ('APPROVED', 'APPROVED_WITH_WARNINGS', 'REJECT')),
+    confidence REAL CHECK(confidence >= 0.0 AND confidence <= 1.0),
+    warnings_count INTEGER DEFAULT 0,
+    challenges TEXT,
+    repair_cycle INTEGER DEFAULT 0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (goal_id) REFERENCES goal_meta(goal_id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_critic_goal ON critic_verdict(goal_id);
+CREATE INDEX IF NOT EXISTS idx_critic_verdict ON critic_verdict(verdict);
 
 -- Indexes for execution tracking
 CREATE INDEX IF NOT EXISTS idx_execution_goal ON execution_state(goal_id);
