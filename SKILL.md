@@ -1182,6 +1182,21 @@ User trigger → SKILL.md → mcp__sqlite__query → Return
 
 ## 5. FSRS-6 Constants
 
+### Algorithm Hardening (P1 Audit Fixes)
+
+**Migration:** `docs/learnloop/mcp-queries/migrations/009-fsrs-hardening.sql`
+
+| Issue | Old Value | New Value | Rationale |
+|-------|-----------|-----------|-----------|
+| P1-1: Stability lower bound | `>= 0.0` | `>= 1.0` | Minimum meaningful stability is 1 day |
+| P1-2: Mean reversion rate | 15% | 25% | Faster correction of difficulty drift |
+| P1-3: Performance factor | Uncapped | Max 1.8 | Prevent excessive stability growth |
+
+**Implementation Notes:**
+- P1-1 enforced via SQL CHECK constraint (migration only)
+- P1-2 and P1-3 require application-layer updates to fsrs_scheduler.py or prompt templates
+- All changes backward compatible (only tightens constraints/corrects formulas)
+
 ### Core Parameters
 
 ```python
@@ -1198,8 +1213,10 @@ DIFFICULTY_DEFAULT = 5.0       # 1-10 scale, mid-range
 DECAY = -0.5
 
 # Safety bounds
+MIN_STABILITY = 1.0            # Minimum stability (days) - enforced constraint
 MAX_STABILITY = 365.0          # 1 year maximum
 MAX_INTERVAL = 365             # Maximum review interval (days)
+MAX_PERFORMANCE_FACTOR = 1.8   # Clamp to prevent excessive growth
 ```
 
 ### FSRS Formulas
@@ -1221,7 +1238,7 @@ Where:
 
 ```sql
  UPDATE fsrs_state
- SET stability = MIN(365.0, stability * (1 + (11.0 - difficulty) * 0.1 * (1 + (:performance - 0.6) * 2) * (1 + SQRT(stability)/10.0) * (0.5 + :retrievability)))
+ SET stability = MIN(365.0, stability * (1 + (11.0 - difficulty) * 0.1 * MIN(1.8, 1 + (:performance - 0.6) * 2) * (1 + SQRT(stability)/10.0) * (0.5 + :retrievability)))
  WHERE topic_id = :topic_id AND :performance >= 0.6;
 ```
 
@@ -1229,7 +1246,9 @@ Where:
 - f(D) = 11 - difficulty
 - f(S) = 1 + sqrt(S)/10  (saturation effect)
 - f(R) = 0.5 + retrievability
-- p_factor = 1 + (performance - 0.6) * 2  (for performance >= 0.6)
+- p_factor = MIN(1.8, 1 + (performance - 0.6) * 2)  (clamped to 1.8 max)
+
+**P1-3 Fix:** Performance factor clamped to 1.8 maximum to prevent excessive stability growth on perfect scores (e.g., performance=1.0 → p_factor=1.8 instead of 2.2).
 ```
 
 #### Stability Update (Failure)
@@ -1243,10 +1262,15 @@ For performance < 0.6
 #### Difficulty Update
 
 ```
-D' = D + (5 - D) * 0.1 * 0.1 + (1 - performance) * 2 * 0.1
+D' = D + (5.5 - D) * 0.25 + (1 - performance) * 0.3
 
-Mean reversion toward 5.0, adjusted by performance.
+Mean reversion toward 5.5 (not 5.0), adjusted by performance.
 ```
+
+**P1-2 Fix:** Mean reversion rate increased from 15% to 25% for faster correction of difficulty drift. This prevents the difficulty parameter from staying too high or too low for extended periods.
+
+**Old formula:** `D' = D + (5.5 - D) * 0.15 + (1 - performance) * 0.3`
+**New formula:** `D' = D + (5.5 - D) * 0.25 + (1 - performance) * 0.3`
 
 #### Interval Calculation
 

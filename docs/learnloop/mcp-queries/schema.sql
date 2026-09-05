@@ -62,7 +62,7 @@ CREATE TABLE IF NOT EXISTS topics (
 -- FSRS-6 state tracking
 CREATE TABLE IF NOT EXISTS fsrs_state (
     topic_id INTEGER PRIMARY KEY,
-    stability REAL DEFAULT 2.5 CHECK(stability >= 0.0 AND stability <= 365.0),
+    stability REAL DEFAULT 2.5 CHECK(stability >= 1.0 AND stability <= 365.0),
     difficulty REAL DEFAULT 5.0 CHECK(difficulty >= 1.0 AND difficulty <= 10.0),
     state INTEGER DEFAULT 0 CHECK(state IN (0, 1, 2, 3)),
     last_review TIMESTAMP,
@@ -70,6 +70,7 @@ CREATE TABLE IF NOT EXISTS fsrs_state (
     reviews INTEGER DEFAULT 0,
     FOREIGN KEY (topic_id) REFERENCES topics(id)
 );
+-- P1-1 Fix: Stability lower bound raised from 0.0 to 1.0 (see migration 009-fsrs-hardening.sql)
 
 -- Session history
 CREATE TABLE IF NOT EXISTS sessions (

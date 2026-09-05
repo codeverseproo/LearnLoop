@@ -172,7 +172,19 @@ CREATE TABLE execution_state (
     PRIMARY KEY (goal_id, phase, wave),
     FOREIGN KEY (goal_id) REFERENCES goal_meta(goal_id) ON DELETE CASCADE
 );
-INSERT INTO execution_state SELECT * FROM execution_state_old;
+-- Copy existing columns, set new columns to defaults
+INSERT INTO execution_state (
+    goal_id, phase, wave, agent_spawns, agent_type, attempts, max_attempts,
+    last_attempt, last_failure_reason, phase_complete, repair_cycles,
+    user_budget, budget_enforcement, error_code,
+    repair_search_count, repair_agents_spawned, spawn_count
+)
+SELECT
+    goal_id, phase, wave, agent_spawns, agent_type, attempts, max_attempts,
+    last_attempt, last_failure_reason, phase_complete, repair_cycles,
+    user_budget, budget_enforcement, error_code,
+    0, 0, 0
+FROM execution_state_old;
 DROP TABLE execution_state_old;
 
 -- 13. critic_verdict (line 232): goal_id -> goal_meta.goal_id
@@ -210,16 +222,8 @@ CREATE INDEX IF NOT EXISTS idx_critic_verdict ON critic_verdict(verdict);
 -- ============================================
 -- P0-4: Add Missing Error Codes (Part 3)
 -- ============================================
--- These codes are referenced in codebase but missing from error_registry
-
-INSERT OR IGNORE INTO error_registry (error_code, category, severity, message_template, user_message, recovery_action) VALUES
--- Topic errors (E100-E199)
-('E102', 'topic', 'medium', 'Prerequisite not satisfied for topic: {topic_id}', 'Prerequisites incomplete', 'Complete prerequisite topics first'),
-
--- Research errors (E500-E599)
-('E505', 'research', 'medium', 'Repair agent spawn limit reached', 'Repair limit reached', 'Approve with warnings or force repair'),
-('E510', 'research', 'high', 'Research quality below threshold: {confidence}', 'Research quality insufficient', 'Run additional research agents'),
-('E511', 'research', 'medium', 'Source diversity below minimum: {source_types}', 'Need diverse sources', 'Add sources from different tiers');
+-- NOTE: Error codes moved to migration 010 (error-registry.sql)
+-- error_registry table is created in migration 010
 
 -- ============================================
 -- P0-5: WAVE4_REPAIR Execution State Template (Part 3)
@@ -251,19 +255,11 @@ INSERT OR IGNORE INTO error_registry (error_code, category, severity, message_te
 -- Problem: randomblob(16) generates 128-bit tokens using SQLite's PRNG
 -- which may not be cryptographically secure on all platforms.
 --
--- Solution: Replace trigger with application-layer token generation.
--- Remove auto-generation trigger, require token to be provided.
+-- Solution: Application-layer token generation.
+-- NOTE: interview_sessions table not yet implemented - removed trigger.
+-- Token validation should be implemented when table is created.
 
-DROP TRIGGER IF EXISTS trg_generate_resume_token;
-
--- Create new trigger that validates token presence
-CREATE TRIGGER IF NOT EXISTS trg_validate_resume_token
-BEFORE INSERT ON interview_sessions
-FOR EACH ROW
-WHEN NEW.resume_token IS NULL
-BEGIN
-    SELECT RAISE(ABORT, 'resume_token required: application must generate using secrets.token_urlsafe(32)');
-END;
+-- Token generation at application layer: secrets.token_urlsafe(32)
 
 -- ============================================
 -- Migration Notes (Part 3)
