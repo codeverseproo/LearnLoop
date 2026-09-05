@@ -56,3 +56,6 @@ references/
 *.db
 *.sqlite
 *.sqlite3
+
+# Superpowers SDD workspaces (local only)
+.superpowers/
