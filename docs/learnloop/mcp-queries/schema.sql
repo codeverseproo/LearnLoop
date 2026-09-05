@@ -6,6 +6,10 @@
 -- SQLite MCP handles escaping. Never concatenate user input into queries.
 -- ============================================
 
+-- P0-1: Enable foreign key enforcement (MUST run on every connection)
+-- Note: PRAGMA does not persist; application must execute this after connect
+-- PRAGMA foreign_keys = ON;
+
 -- Goal metadata
 CREATE TABLE IF NOT EXISTS goal_meta (
     goal_id TEXT PRIMARY KEY,

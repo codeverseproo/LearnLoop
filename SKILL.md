@@ -54,7 +54,11 @@ On `syllabus_generation` workflow trigger:
    ```bash
    mkdir -p ~/.learnloop/goals/{goal_id}
    sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/schema.sql
+   sqlite3 ~/.learnloop/goals/{goal_id}/memory.db "PRAGMA foreign_keys = ON;"
    ```
+
+   **CRITICAL:** Foreign key enforcement must be enabled on every connection.
+   Without `PRAGMA foreign_keys = ON;`, all FK constraints are advisory only.
 
 4. **Verify initialization:**
    ```sql
