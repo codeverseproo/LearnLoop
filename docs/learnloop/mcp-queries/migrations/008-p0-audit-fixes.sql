@@ -23,9 +23,12 @@ CREATE TABLE fsrs_state (
     last_review TIMESTAMP,
     next_review TIMESTAMP,
     reviews INTEGER DEFAULT 0,
+    lapses INTEGER DEFAULT 0,
+    last_rating INTEGER CHECK(last_rating IN (1, 2, 3, 4)),
     FOREIGN KEY (topic_id) REFERENCES topics(id) ON DELETE CASCADE
 );
-INSERT INTO fsrs_state SELECT * FROM fsrs_state_old;
+INSERT INTO fsrs_state (topic_id, stability, difficulty, state, last_review, next_review, reviews)
+SELECT topic_id, stability, difficulty, state, last_review, next_review, reviews FROM fsrs_state_old;
 DROP TABLE fsrs_state_old;
 
 -- 2. sessions (line 80): topic_id -> topics.id

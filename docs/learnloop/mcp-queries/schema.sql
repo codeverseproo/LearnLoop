@@ -59,6 +59,31 @@ CREATE TABLE IF NOT EXISTS topics (
     detection_method TEXT CHECK(detection_method IN ('complexity_analysis', 'error_pattern', 'expert_practice'))
 );
 
+-- FSRS-6 parameters (canonical weights)
+CREATE TABLE IF NOT EXISTS fsrs_parameters (
+    id INTEGER PRIMARY KEY CHECK(id = 1),
+    w0  REAL DEFAULT 0.4,
+    w1  REAL DEFAULT 0.6,
+    w2  REAL DEFAULT 2.4,
+    w3  REAL DEFAULT 10.0,
+    w4  REAL DEFAULT 4.93,
+    w5  REAL DEFAULT -0.14,
+    w6  REAL DEFAULT 0.8,
+    w7  REAL DEFAULT -0.1,
+    w8  REAL DEFAULT 0.05,
+    w9  REAL DEFAULT 0.3,
+    w10 REAL DEFAULT 1.36,
+    w11 REAL DEFAULT 1.75,
+    w12 REAL DEFAULT 0.03,
+    w13 REAL DEFAULT 0.15,
+    w14 REAL DEFAULT 0.48,
+    w15 REAL DEFAULT 2.61,
+    w16 REAL DEFAULT 0.0,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    source TEXT DEFAULT 'canonical_v6'
+);
+
 -- FSRS-6 state tracking
 CREATE TABLE IF NOT EXISTS fsrs_state (
     topic_id INTEGER PRIMARY KEY,
@@ -68,9 +93,14 @@ CREATE TABLE IF NOT EXISTS fsrs_state (
     last_review TIMESTAMP,
     next_review TIMESTAMP,
     reviews INTEGER DEFAULT 0,
+    lapses INTEGER DEFAULT 0,
+    last_rating INTEGER CHECK(last_rating IN (1, 2, 3, 4)),
     FOREIGN KEY (topic_id) REFERENCES topics(id)
 );
 -- P1-1 Fix: Stability lower bound raised from 0.0 to 1.0 (see migration 009-fsrs-hardening.sql)
+
+-- Insert default FSRS parameters if not exists
+INSERT OR IGNORE INTO fsrs_parameters (id) VALUES (1);
 
 -- Session history
 CREATE TABLE IF NOT EXISTS sessions (
@@ -157,6 +187,7 @@ CREATE TABLE IF NOT EXISTS topic_sources (
 CREATE INDEX IF NOT EXISTS idx_topics_status ON topics(status);
 CREATE INDEX IF NOT EXISTS idx_topics_next_review ON topics(next_review);
 CREATE INDEX IF NOT EXISTS idx_fsrs_next_review ON fsrs_state(next_review);
+CREATE INDEX IF NOT EXISTS idx_fsrs_last_rating ON fsrs_state(last_rating);
 CREATE INDEX IF NOT EXISTS idx_sessions_topic ON sessions(topic_id);
 CREATE INDEX IF NOT EXISTS idx_sessions_started ON sessions(started_at);
 CREATE INDEX IF NOT EXISTS idx_topic_links_from ON topic_links(from_topic);
