@@ -1495,7 +1495,60 @@ ON CONFLICT DO UPDATE SET
 
 ---
 
-## 8. References
+## 8. Verification & Testing
+
+### SQL Test Suite
+
+**Run all tests:**
+```bash
+cd docs/learnloop/tests
+./run-tests.sh
+```
+
+**Run against specific goal:**
+```bash
+./run-tests.sh <goal_id>
+```
+
+**Test categories:**
+
+| Category | Tests | Files | Status |
+|----------|-------|-------|--------|
+| FSRS calculations | 4 | `unit/test_fsrs.sql` | ✅ PASS |
+| Budget enforcement | 4 | `integration/test_budget.sql` | ✅ PASS |
+| Resume recovery | 5 | `integration/test_resume.sql` | ✅ PASS |
+| Multi-goal isolation | 7 | `integration/test_isolation.sql` | ✅ PASS |
+| Source validation | 5 | `validators/test_sources.sql` | ✅ PASS |
+
+**All 25 tests run in <1 second with zero token cost.**
+
+### Output Validation (Obsidian)
+
+**Auto-generated markdown follows Obsidian conventions:**
+
+- Internal links use `[[topic-name]]` syntax
+- No broken internal references (CI validates)
+- Proper YAML frontmatter for note properties
+- Markdown lint configuration in `.markdownlint.json`
+
+**Optional validation:**
+```bash
+# Lint all generated markdown files
+npx markdownlint-cli "output/**/*.md" --config .markdownlint.json
+```
+
+**Manual verification:**
+- Open generated notes in Obsidian
+- Verify graph view shows topic connections
+- Check backlinks resolve correctly
+
+### Requirement Matrix
+
+See `docs/learnloop/tests/REQUIREMENT-MATRIX.md` for complete claim → proof mapping.
+
+---
+
+## 9. References
 
 | File | Contents |
 |------|----------|

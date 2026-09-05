@@ -33,7 +33,7 @@ echo "=== LearnLoop SQL Tests ==="
 echo ""
 
 # Run each test file
-for test_file in unit/*.sql integration/*.sql; do
+for test_file in unit/*.sql integration/*.sql validators/*.sql; do
     echo "--- Running: $test_file ---"
     sqlite3 "$DB_PATH" < "$test_file"
     echo ""
