@@ -129,7 +129,23 @@ On `syllabus_generation` workflow trigger:
 - baseline_knowledge: beginner|intermediate|advanced
 - timeline_weeks: integer
 - intensity: relaxed|standard|intensive
-- **agent_budget**: Conservative(10)|Balanced(20)|Aggressive(50)|Unlimited(-1)
+- **agent_budget**: Parallel execution limit for agent spawning
+
+**Agent Budget Options:**
+
+| Value | Label | Description | Use Case |
+|-------|-------|-------------|----------|
+| -1 | Unlimited | No cap on parallel agents | Research projects, powerful hardware |
+| 4 | Conservative | Max 4 agents in parallel | Limited RAM/CPU, tight budget |
+| 8 | Balanced | Max 8 agents in parallel | Standard hardware, moderate budget |
+| 20 | Aggressive | Max 20 agents in parallel | High-performance, willing to spend |
+
+**Default:** -1 (unlimited)
+
+**Budget Enforcement:**
+- Orchestrator checks `spawn_count >= agent_budget` before spawning new agents
+- Mode: `warning` (logs but continues) or `hard_limit` (blocks spawning)
+- User can change via `/interview` command to adjust budget mid-goal
 
 ### Blocking Enforcement
 

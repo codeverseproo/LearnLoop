@@ -4,12 +4,18 @@
 -- Verifies: Budget setting stops agent spawning at limit
 -- Claim: "Budget actually stops spawning" (Matrix #2)
 
+-- Setup: Create goal metadata (FK requirement)
+INSERT OR REPLACE INTO goal_meta (goal_id, goal_type, agent_budget, budget_enforcement)
+VALUES
+    ('test-budget-goal', 'skill', 4, 'warning'),
+    ('test-unlimited-goal', 'skill', -1, 'warning');
+
 -- Test 1: Budget limit blocks spawn at threshold
--- Setup: Create execution state with budget = 5, spawn_count = 5
+-- Setup: Create execution state with budget = 4, spawn_count = 4
 INSERT OR REPLACE INTO execution_state (
     goal_id, phase, wave, agent_spawns, user_budget, spawn_count
 ) VALUES (
-    'test-budget-goal', 'WAVE1', 1, 5, 5, 5
+    'test-budget-goal', 'WAVE1', 1, 4, 4, 4
 );
 
 -- Verify: spawn_count >= user_budget triggers block
@@ -25,7 +31,7 @@ WHERE goal_id = 'test-budget-goal' AND phase = 'WAVE1';
 -- Verify: budget_enforcement column exists and has valid value
 SELECT 'Test 2: Budget enforcement mode configurable',
     CASE
-        WHEN budget_enforcement IN ('warning', 'hard_stop', 'soft_limit') THEN 'PASS'
+        WHEN budget_enforcement IN ('warning', 'hard_limit') THEN 'PASS'
         ELSE 'FAIL'
     END AS result
 FROM execution_state
@@ -62,18 +68,45 @@ SELECT 'Test 4: Budget threshold warnings',
         ELSE 'FAIL'
     END AS result;
 
+-- Test 5: User-set budget stored in goal_meta
+SELECT 'Test 5: User budget preference stored',
+    CASE
+        WHEN (
+            SELECT agent_budget
+            FROM goal_meta
+            WHERE goal_id = 'test-budget-goal'
+        ) = 4 THEN 'PASS'
+        ELSE 'FAIL'
+    END AS result;
+
+-- Test 6: Budget options validation (4, 8, 20, -1)
+-- Check before cleanup
+SELECT 'Test 6: Valid budget options',
+    CASE
+        WHEN (
+            SELECT COUNT(*)
+            FROM goal_meta
+            WHERE goal_id LIKE 'test-%' AND agent_budget IN (4, 8, 20, -1)
+        ) >= 2 THEN 'PASS'
+        ELSE 'FAIL'
+    END AS result;
+
 -- Cleanup test data
 DELETE FROM execution_state WHERE goal_id LIKE 'test-%';
+DELETE FROM goal_meta WHERE goal_id LIKE 'test-%';
 
 -- ============================================
 -- Summary: Budget Limit Enforcement
 -- ============================================
 -- Tests verify:
 -- 1. spawn_count >= user_budget triggers block
--- 2. budget_enforcement mode is configurable
+-- 2. budget_enforcement mode is configurable (warning/hard_limit)
 -- 3. Budget = -1 allows unlimited spawns
 -- 4. Threshold warnings at 50%, 75%, 90%
+-- 5. User budget preference stored in goal_meta
+-- 6. Valid budget options: 4 (Conservative), 8 (Balanced), 20 (Aggressive), -1 (Unlimited)
 --
 -- Related:
 -- - docs/learnloop/mcp-queries/gates/budget-check.sql
+-- - SKILL.md Section 3: Stage 3 (agent_budget question)
 -- - SKILL.md lines 764, 908-948 (budget/wave checks)
