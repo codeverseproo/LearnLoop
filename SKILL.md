@@ -51,19 +51,21 @@ On `syllabus_generation` workflow trigger:
    - Path: `~/.learnloop/goals/{goal_id}/memory.db`
 
 3. **If not exists, initialize:**
-   ```bash
-   mkdir -p ~/.learnloop/goals/{goal_id}
-   sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/schema.sql
-   sqlite3 ~/.learnloop/goals/{goal_id}/memory.db "PRAGMA foreign_keys = ON;"
-   ```
+   **MCP Query:** Execute `docs/learnloop/mcp-queries/schema.sql`
+   **Purpose:** Initialize database with all 16 tables
+   **Returns:** Empty database ready for goal data
+
+   **Post-init query:** Execute `PRAGMA foreign_keys = ON;` as separate query.
 
    **CRITICAL:** Foreign key enforcement must be enabled on every connection.
    Without `PRAGMA foreign_keys = ON;`, all FK constraints are advisory only.
 
 4. **Verify initialization:**
-   ```sql
-   PRAGMA integrity_check;
-   ```
+
+   **MCP Query:** `PRAGMA integrity_check;`
+   **Returns:** `ok` if database healthy
+
+**Note:** All database operations use SQLite MCP. No shell commands required.
 
 ### Database Location
 
@@ -202,7 +204,9 @@ See §1.5 - Auto-initialize `~/.learnloop/goals/{goal_id}/memory.db`
 
 **Execute guard query:**
 ```bash
-GUARD_RESULT=$(sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/pre-wave1-interview.sql)
+**MCP Query:** Execute `gates/pre-wave1-interview.sql`
+   **Parameters:** `:goal_id`
+   **Returns:** Guard pass/fail status
 GUARD_STATUS=$(echo "$GUARD_RESULT" | awk -F'|' '{print $4}')
 ```
 
@@ -441,7 +445,9 @@ Verify 7 criteria using SQL queries from `research.sql`:
 
 **Execute guard query:**
 ```bash
-GUARD_RESULT=$(sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/pre-wave5-output.sql)
+**MCP Query:** Execute `gates/pre-wave5-output.sql`
+   **Parameters:** `:goal_id`
+   **Returns:** Output gate pass/fail
 GUARD_STATUS=$(echo "$GUARD_RESULT" | awk -F'|' '{print $4}')
 ```
 
@@ -761,7 +767,9 @@ Use for:
 
 **Gate Check:**
 ```sql
-sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/wave1-discovery.sql
+**MCP Query:** Execute `gates/wave1-discovery.sql`
+   **Parameters:** `:goal_id`
+   **Returns:** Wave 1 gate status
 ```
 
 ---
@@ -905,7 +913,9 @@ WHERE goal_id = :goal_id AND phase = 'WAVE4_REPAIR' AND completed_at IS NULL;
 **After each wave, emit budget status:**
 
 ```bash
-BUDGET_RESULT=$(sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/budget-check.sql)
+**MCP Query:** Execute `gates/budget-check.sql`
+   **Parameters:** `:goal_id`
+   **Returns:** Budget remaining, spawn count
 BUDGET_STATUS=$(echo "$BUDGET_RESULT" | awk -F'|' '{print $5}')
 BUDGET_MESSAGE=$(echo "$BUDGET_RESULT" | awk -F'|' '{print $6}')
 ```
@@ -934,7 +944,9 @@ Each wave checks budget BEFORE spawning agents:
 
 ```bash
 # Pre-spawn budget check
-BUDGET_RESULT=$(sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/budget-check.sql)
+**MCP Query:** Execute `gates/budget-check.sql`
+   **Parameters:** `:goal_id`
+   **Returns:** Budget remaining, spawn count
 BUDGET_STATUS=$(echo "$BUDGET_RESULT" | awk -F'|' '{print $5}')
 ENFORCEMENT=$(echo "$BUDGET_RESULT" | awk -F'|' '{print $3}')
 
@@ -1036,9 +1048,10 @@ WAVE4_REPAIR (loop, max 5 cycles)                                             �
 **Every wave transition MUST execute guards:**
 
 1. **Before WAVE1:**
-   ```bash
-   sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/pre-wave1-interview.sql
-   ```
+   
+   **MCP Query:** Execute `gates/pre-wave1-interview.sql`
+   **Parameters:** `:goal_id`
+   **Returns:** Guard status
    - IF `guard_status LIKE 'BLOCK:%'` → STOP, RETURN message, trigger interview
    - IF `guard_status = 'PASS'` → Proceed to spawn discovery agents
 
@@ -1047,9 +1060,10 @@ WAVE4_REPAIR (loop, max 5 cycles)                                             �
    - Spawn critic agent
 
 3. **Before WAVE5:**
-   ```bash
-   sqlite3 ~/.learnloop/goals/{goal_id}/memory.db < docs/learnloop/mcp-queries/gates/pre-wave5-output.sql
-   ```
+
+   **MCP Query:** Execute `gates/pre-wave5-output.sql`
+   **Parameters:** `:goal_id`
+   **Returns:** Output gate status
    - IF `guard_status LIKE 'BLOCK:%'` → STOP, route to WAVE4 repair
    - IF `guard_status = 'PASS'` → Generate syllabus output
 
@@ -1194,30 +1208,25 @@ User trigger → SKILL.md → mcp__sqlite__query → Return
 
 **Implementation Notes:**
 - P1-1 enforced via SQL CHECK constraint (migration only)
-- P1-2 and P1-3 require application-layer updates to fsrs_scheduler.py or prompt templates
+- P1-2 and P1-3 require application-layer updates to FSRS Scheduler component or prompt templates
 - All changes backward compatible (only tightens constraints/corrects formulas)
 
 ### Core Parameters
 
-```python
-# scripts/fsrs_scheduler.py
+### FSRS-6 Parameters
 
-# Target retention probability
-RETRIEVABILITY_THRESHOLD = 0.9  # 90% retention target
+| Parameter | Value | Purpose |
+|-----------|-------|---------|
+| RETRIEVABILITY_THRESHOLD | 0.9 | 90% retention target |
+| STABILITY_DEFAULT | 2.5 days | Days until 90% recall |
+| DIFFICULTY_DEFAULT | 5.0 | 1-10 scale, mid-range |
+| DECAY | -0.5 | Mastery decay factor |
+| MIN_STABILITY | 1.0 day | Minimum stability (enforced) |
+| MAX_STABILITY | 365.0 days | Maximum stability (1 year) |
+| MAX_INTERVAL | 365 days | Maximum review interval |
+| MAX_PERFORMANCE_FACTOR | 1.8 | Clamp to prevent excessive growth |
 
-# Default values for new items
-STABILITY_DEFAULT = 2.5         # Days until 90% recall
-DIFFICULTY_DEFAULT = 5.0       # 1-10 scale, mid-range
-
-# Decay factor for mastery calculation
-DECAY = -0.5
-
-# Safety bounds
-MIN_STABILITY = 1.0            # Minimum stability (days) - enforced constraint
-MAX_STABILITY = 365.0          # 1 year maximum
-MAX_INTERVAL = 365             # Maximum review interval (days)
-MAX_PERFORMANCE_FACTOR = 1.8   # Clamp to prevent excessive growth
-```
+**Implementation:** Parameters enforced via SQL CHECK constraints (migration 009).
 
 ### FSRS Formulas
 
@@ -1338,65 +1347,65 @@ cp ~/.learnloop/backups/{backup_file}.db ~/.learnloop/goals/{goal_id}/memory.db
 
 ### E0XX: Input Errors
 
-| Code | Name | Description | File |
-|------|------|-------------|------|
-| E001 | DUPLICATE_GOAL | Goal database already exists | sqlite_init.py |
-| E002 | INVALID_TOLERANCE | Tolerance parameter out of range | fsrs_scheduler.py |
-| E003 | GOAL_LIMIT_EXCEEDED | Maximum 3 concurrent goals | sqlite_init.py |
-| E004 | INVALID_GOAL_ID | goal_id fails safe pattern | validation.py |
-| E005 | INVALID_GOAL_TYPE | goal_type not in {exam, skill, degree, topic} | validation.py |
+| Code | Name | Description | Component |
+|------|------|-------------|-----------|
+| E001 | DUPLICATE_GOAL | Goal database already exists | Database Initialization |
+| E002 | INVALID_TOLERANCE | Tolerance parameter out of range | FSRS Scheduler |
+| E003 | GOAL_LIMIT_EXCEEDED | Maximum 3 concurrent goals | Database Initialization |
+| E004 | INVALID_GOAL_ID | goal_id fails safe pattern | Input Validation |
+| E005 | INVALID_GOAL_TYPE | goal_type not in {exam, skill, degree, topic} | Input Validation |
 
 ### E1XX: State Errors
 
-| Code | Name | Description | File |
-|------|------|-------------|------|
-| E101 | TOPIC_NOT_FOUND | Topic ID doesn't exist in database | mastery_update.py |
-| E102 | MAX_GOALS_REACHED | Cannot create more goals (limit: 3) | sqlite_init.py |
-| E103 | VAULT_NOT_INITIALIZED | Obsidian vault path not configured | vault_manager.py |
-| E104 | SESSION_IN_PROGRESS | Cannot start new session while active | workflow_router.py |
+| Code | Name | Description | Component |
+|------|------|-------------|-----------|
+| E101 | TOPIC_NOT_FOUND | Topic ID doesn't exist in database | Mastery Tracker |
+| E102 | MAX_GOALS_REACHED | Cannot create more goals (limit: 3) | Database Initialization |
+| E103 | VAULT_NOT_INITIALIZED | Obsidian vault path not configured | Vault Manager |
+| E104 | SESSION_IN_PROGRESS | Cannot start new session while active | Workflow Router |
 
 ### E2XX: Calculation Errors
 
-| Code | Name | Description | File |
-|------|------|-------------|------|
-| E201 | INVALID_STABILITY | Stability value negative | fsrs_scheduler.py |
-| E202 | INVALID_DIFFICULTY | Difficulty outside 1-10 range | fsrs_scheduler.py |
-| E203 | INVALID_PERFORMANCE | Performance outside [0.0, 1.0] | validation.py |
-| E204 | CALCULATION_OVERFLOW | Numerical overflow in FSRS math | fsrs_scheduler.py |
+| Code | Name | Description | Component |
+|------|------|-------------|-----------|
+| E201 | INVALID_STABILITY | Stability value negative | FSRS Scheduler |
+| E202 | INVALID_DIFFICULTY | Difficulty outside 1-10 range | FSRS Scheduler |
+| E203 | INVALID_PERFORMANCE | Performance outside [0.0, 1.0] | Input Validation |
+| E204 | CALCULATION_OVERFLOW | Numerical overflow in FSRS math | FSRS Scheduler |
 
 ### E3XX: Vault Errors
 
-| Code | Name | Description | File |
-|------|------|-------------|------|
-| E301 | VAULT_WRITE_FAILED | Cannot write to Obsidian vault | vault_manager.py |
-| E302 | INVALID_TOPIC_ID | topic_id fails safe pattern | validation.py |
-| E303 | NOTE_NOT_FOUND | Note file doesn't exist | vault_manager.py |
-| E304 | ARCHIVE_FAILED | Cannot move topic to archive | vault_manager.py |
+| Code | Name | Description | Component |
+|------|------|-------------|-----------|
+| E301 | VAULT_WRITE_FAILED | Cannot write to Obsidian vault | Vault Manager |
+| E302 | INVALID_TOPIC_ID | topic_id fails safe pattern | Input Validation |
+| E303 | NOTE_NOT_FOUND | Note file doesn't exist | Vault Manager |
+| E304 | ARCHIVE_FAILED | Cannot move topic to archive | Vault Manager |
 
 ### E4XX: Session Errors
 
-| Code | Name | Description | File |
-|------|------|-------------|------|
-| E401 | SESSION_TIMEOUT | Session exceeded maximum duration | workflow_router.py |
-| E402 | ASSESSMENT_INCOMPLETE | User left before completing assessment | workflow_router.py |
-| E403 | SESSION_CANCELLED | User cancelled mid-session | workflow_router.py |
+| Code | Name | Description | Component |
+|------|------|-------------|-----------|
+| E401 | SESSION_TIMEOUT | Session exceeded maximum duration | Workflow Router |
+| E402 | ASSESSMENT_INCOMPLETE | User left before completing assessment | Workflow Router |
+| E403 | SESSION_CANCELLED | User cancelled mid-session | Workflow Router |
 
 ### E5XX: Research Errors
 
-| Code | Name | Description | File |
-|------|------|-------------|------|
-| E501 | SOURCE_UNREACHABLE | Cannot fetch source URL | research_engine.py |
-| E502 | INSUFFICIENT_SOURCES | Fewer than 3 sources for claim | research_engine.py |
-| E503 | CLAIM_TIE_FAILED | Cannot connect sources to claim | research_engine.py |
+| Code | Name | Description | Component |
+|------|------|-------------|-----------|
+| E501 | SOURCE_UNREACHABLE | Cannot fetch source URL | Research Engine |
+| E502 | INSUFFICIENT_SOURCES | Fewer than 3 sources for claim | Research Engine |
+| E503 | CLAIM_TIE_FAILED | Cannot connect sources to claim | Research Engine |
 
 ### E6XX: System Errors
 
-| Code | Name | Description | File |
-|------|------|-------------|------|
-| E601 | RESEARCH_CONTRADICTION | Sources contradict each other | research_engine.py |
-| E602 | DATABASE_LOCKED | SQLite database is locked | sqlite_init.py |
-| E603 | FSRS_RUNTIME_ERROR | Unspecified FSRS calculation failure | fsrs_scheduler.py |
-| E699 | UNKNOWN_ERROR | Catch-all for unexpected errors | various |
+| Code | Name | Description | Component |
+|------|------|-------------|-----------|
+| E601 | RESEARCH_CONTRADICTION | Sources contradict each other | Research Engine |
+| E602 | DATABASE_LOCKED | SQLite database is locked | Database Initialization |
+| E603 | FSRS_RUNTIME_ERROR | Unspecified FSRS calculation failure | FSRS Scheduler |
+| E699 | UNKNOWN_ERROR | Catch-all for unexpected errors | System |
 
 ---
 
@@ -1497,19 +1506,34 @@ ON CONFLICT DO UPDATE SET
 | `references/achievement-definitions.md` | Gamification specifications |
 | `references/research-methodology.md` | Layered research approach |
 
-## 9. Scripts
+## 9. MCP Query Reference
 
-| Script | Purpose |
-|--------|---------|
-| `scripts/sqlite_init.py` | Database initialization |
-| `scripts/fsrs_scheduler.py` | Spaced repetition scheduling |
-| `scripts/mastery_update.py` | Progress tracking, streak management |
-| `scripts/vault_manager.py` | Obsidian vault operations |
-| `scripts/research_engine.py` | Layered research compilation |
-| `scripts/validation.py` | Input validation, security |
+All database operations use SQLite MCP queries from `docs/learnloop/mcp-queries/`.
+
+### Core Queries
+
+| Query File | Purpose | Section |
+|------------|---------|---------|
+| `schema.sql` | Database initialization | §1.5 |
+| `fsrs.sql` | FSRS-6 calculations | §5 |
+| `learning.sql` | Learning sessions | §2 |
+| `review.sql` | Review management | §7 |
+| `streak.sql` | Streak tracking | §6 |
+
+### Gate Queries
+
+| Query File | Purpose | Section |
+|------------|---------|---------|
+| `gates/pre-wave1-interview.sql` | Interview gate check | §2.5 |
+| `gates/pre-wave5-output.sql` | Output gate check | §2.5 |
+| `gates/budget-check.sql` | Budget enforcement | §2.4 |
+| `gates/wave1-discovery.sql` | Discovery phase gate | §2.1 |
+
+**No scripts required.** All logic is in SQL queries executed via MCP.
 
 ---
 
-**Skill Version:** 1.0.0
+**Skill Version:** 2.0.0
 **FSRS Version:** 6 (Free Spaced Repetition Scheduler)
-**Last Updated:** 2026-09-01
+**Pattern:** Pure SQLite MCP (no hardcoded scripts)
+**Last Updated:** 2026-09-05
