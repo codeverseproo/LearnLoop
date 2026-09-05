@@ -65,12 +65,16 @@ WHERE goal_id = ?;
 SELECT
     CASE
         WHEN goal_profile_json = '{}' THEN 'INCOMPLETE'
-        WHEN json_extract(goal_profile_json, '$.exam_date') IS NULL THEN 'INCOMPLETE'
-        WHEN json_extract(goal_profile_json, '$.timeline_weeks') IS NULL THEN 'INCOMPLETE'
         WHEN json_extract(goal_profile_json, '$.intensity') IS NULL THEN 'INCOMPLETE'
+        -- P0 fix: goal_type-specific validation
+        WHEN goal_type = 'exam' AND json_extract(goal_profile_json, '$.exam_date') IS NULL THEN 'INCOMPLETE'
+        WHEN goal_type = 'exam' AND json_extract(goal_profile_json, '$.passing_score') IS NULL THEN 'INCOMPLETE'
+        WHEN goal_type IN ('skill', 'degree', 'topic') AND json_extract(goal_profile_json, '$.timeline_weeks') IS NULL THEN 'INCOMPLETE'
+        WHEN goal_type IN ('skill', 'degree', 'topic') AND json_extract(goal_profile_json, '$.baseline_knowledge') IS NULL THEN 'INCOMPLETE'
         ELSE 'COMPLETE'
     END AS goal_interview_status,
-    goal_profile_json
+    goal_profile_json,
+    goal_type
 FROM goal_meta
 WHERE goal_id = ?;
 
