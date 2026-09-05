@@ -31,12 +31,12 @@ log_info() {
 
 log_pass() {
     echo "[PASS] $1"
-    ((PASSED_TESTS++))
+    PASSED_TESTS=$((PASSED_TESTS + 1))
 }
 
 log_fail() {
     echo "[FAIL] $1"
-    ((FAILED_TESTS++))
+    FAILED_TESTS=$((FAILED_TESTS + 1))
 }
 
 cleanup_wal() {
@@ -92,7 +92,7 @@ run_test_file() {
     # Cleanup WAL between tests
     cleanup_wal
 
-    ((TOTAL_TESTS++))
+    TOTAL_TESTS=$((TOTAL_TESTS + 1))
 }
 
 # ============================================
